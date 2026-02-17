@@ -8,12 +8,14 @@ import { AVAILABLE_TAGS } from '../constants/tags';
 export default function GatheringListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const hasRun = useRef(false);
 
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [recommendedTags, setRecommendedTags] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
@@ -31,12 +33,31 @@ export default function GatheringListPage() {
     }
 
     fetchGatherings();
-    shuffleTags();
   }, []);
 
+  useEffect(() => {
+    shuffleTags();
+  }, [profile]);
+
   function shuffleTags() {
-    const shuffled = [...AVAILABLE_TAGS].sort(() => Math.random() - 0.5);
-    setRecommendedTags(shuffled.slice(0, 5));
+    const userTags = profile?.favorite_game_categories || [];
+    const userLocation = profile?.location;
+
+    // 사용자 관심 태그 중 AVAILABLE_TAGS에 있는 것 우선
+    const matched = AVAILABLE_TAGS.filter(t =>
+      userTags.some(u => u.toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes(u.toLowerCase()))
+    );
+
+    // 사용자 지역과 겹치는 태그
+    const locationTag = userLocation
+      ? AVAILABLE_TAGS.find(t => userLocation.includes(t) || t.includes(userLocation))
+      : null;
+    if (locationTag && !matched.includes(locationTag)) matched.push(locationTag);
+
+    // 나머지는 랜덤으로 채움
+    const remaining = AVAILABLE_TAGS.filter(t => !matched.includes(t)).sort(() => Math.random() - 0.5);
+    const result = [...matched, ...remaining].slice(0, 5);
+    setRecommendedTags(result);
   }
 
   function handleRefreshTags() {
@@ -95,7 +116,6 @@ export default function GatheringListPage() {
     }
 
     if (!profile.is_premium && profile.ai_recommendations_left <= 0) {
-      alert('AI 추천 횟수를 모두 사용했습니다. 프리미엄으로 업그레이드하시면 무제한으로 이용할 수 있습니다.');
       navigate('/premium');
       return;
     }
@@ -123,6 +143,7 @@ export default function GatheringListPage() {
           .from('profiles')
           .update({ ai_recommendations_left: Math.max(0, profile.ai_recommendations_left - 1) })
           .eq('id', user.id);
+        await refreshProfile();
       }
     } catch (error) {
       console.error('AI 추천 오류:', error);
@@ -132,6 +153,10 @@ export default function GatheringListPage() {
       setShowAIModal(true);
     }
   }
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const filteredGatherings = useMemo(() => {
     let result = [...gatherings];
@@ -145,17 +170,17 @@ export default function GatheringListPage() {
       );
     }
 
-    result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    result.sort((a, b) => {
+      const aPremium = a.host?.is_premium ? 1 : 0;
+      const bPremium = b.host?.is_premium ? 1 : 0;
+      if (aPremium !== bPremium) return bPremium - aPremium;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
     return result;
   }, [gatherings, searchQuery]);
 
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-    return `${month}/${day}(${weekday})`;
-  }
+  const totalPages = Math.ceil(filteredGatherings.length / PAGE_SIZE);
+  const paginatedGatherings = filteredGatherings.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   if (loading) {
     return (
@@ -244,12 +269,34 @@ export default function GatheringListPage() {
             whiteSpace: 'nowrap',
             transition: 'all 0.2s',
             opacity: isGeneratingAI ? 0.7 : 1,
+            position: 'relative',
           }}
           onMouseEnter={(e) => { if (!isGeneratingAI) e.currentTarget.style.background = 'var(--button-primary-hover)'; }}
           onMouseLeave={(e) => { if (!isGeneratingAI) e.currentTarget.style.background = 'var(--button-primary)'; }}
         >
           <Sparkles size={16} />
           {isGeneratingAI ? '분석 중...' : '맞춤 추천'}
+          {!profile?.is_premium && !isGeneratingAI && (
+            <span style={{
+              position: 'absolute',
+              top: '-7px',
+              right: '-7px',
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              backgroundColor: '#5a8a72',
+              color: '#FFFFFF',
+              fontSize: '11px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid white',
+              lineHeight: 1,
+            }}>
+              {profile?.ai_recommendations_left ?? 3}
+            </span>
+          )}
         </button>
       </div>
 
@@ -278,12 +325,12 @@ export default function GatheringListPage() {
               whiteSpace: 'nowrap',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.opacity = '0.85';
+              e.currentTarget.style.background = '#6B9080';
+              e.currentTarget.style.color = '#FFFFFF';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.background = '#FFFFFF';
+              e.currentTarget.style.color = '#6B9080';
             }}
           >
             #{tag}
@@ -338,7 +385,7 @@ export default function GatheringListPage() {
             )}
           </div>
         ) : (
-          filteredGatherings.map((gathering, index) => {
+          paginatedGatherings.map((gathering, index) => {
             const isPremium = gathering.host?.is_premium;
             return (
               <div
@@ -349,7 +396,7 @@ export default function GatheringListPage() {
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   background: 'transparent',
-                  borderBottom: index < filteredGatherings.length - 1 ? '1px solid #E5E7EB' : 'none',
+                  borderBottom: index < paginatedGatherings.length - 1 ? '1px solid #E5E7EB' : 'none',
                   borderLeft: isPremium ? '4px solid #C5D89D' : undefined,
                   position: 'relative',
                 }}
@@ -373,19 +420,19 @@ export default function GatheringListPage() {
                   {gathering.title}
                 </h4>
 
-                {/* 호스트 | 인원 | 날짜 */}
+                {/* 호스트 | 인원 */}
                 <div style={{
                   fontSize: '13px',
                   color: 'var(--text-muted)',
                   marginBottom: '8px',
                 }}>
-                  모임장: {gathering.host?.nickname || '익명'} | {gathering.members?.[0]?.count || 0}/{gathering.max_members}명 | {formatDate(gathering.datetime)} {new Date(gathering.datetime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  모임장: {gathering.host?.nickname || '익명'} | {gathering.members?.[0]?.count || 0}명
                 </div>
 
                 {/* 태그 */}
                 {gathering.tags && gathering.tags.length > 0 && (
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {gathering.tags.slice(0, 3).map((tag, idx) => (
+                    {gathering.tags.map((tag, idx) => (
                       <button
                         key={idx}
                         onClick={(e) => {
@@ -422,6 +469,56 @@ export default function GatheringListPage() {
           })
         )}
       </div>
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '24px' }}>
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            style={{
+              padding: '8px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)',
+              background: currentPage === 1 ? 'rgba(0,0,0,0.04)' : '#FFFFFF',
+              color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              fontSize: '14px', fontWeight: '500', transition: 'all 0.2s',
+            }}
+          >
+            ‹
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              style={{
+                padding: '8px 13px', borderRadius: '10px',
+                border: page === currentPage ? 'none' : '1px solid rgba(0,0,0,0.1)',
+                background: page === currentPage ? 'var(--button-primary)' : '#FFFFFF',
+                color: page === currentPage ? '#FFFFFF' : 'var(--text-primary)',
+                cursor: 'pointer', fontSize: '14px', fontWeight: page === currentPage ? '700' : '400',
+                transition: 'all 0.2s',
+              }}
+            >
+              {page}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            style={{
+              padding: '8px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)',
+              background: currentPage === totalPages ? 'rgba(0,0,0,0.04)' : '#FFFFFF',
+              color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text-primary)',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              fontSize: '14px', fontWeight: '500', transition: 'all 0.2s',
+            }}
+          >
+            ›
+          </button>
+        </div>
+      )}
 
       {/* AI 추천 모달 */}
       {showAIModal && (
@@ -529,7 +626,7 @@ export default function GatheringListPage() {
                       </h3>
                       {g.tags && g.tags.length > 0 && (
                         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          {g.tags.slice(0, 3).map((tag, idx) => (
+                          {g.tags.map((tag, idx) => (
                             <button
                               key={idx}
                               onClick={(e) => {
@@ -563,7 +660,7 @@ export default function GatheringListPage() {
                         </div>
                       )}
                       <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                        {formatDate(g.datetime)} · {g.location} · {g.current_members}/{g.max_members}명
+                        {g.current_members}명
                       </div>
                       {g.reason && (
                         <div style={{

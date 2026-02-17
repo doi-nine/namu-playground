@@ -4,15 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PremiumModal from '../components/PremiumModal';
 
-const GAME_TAGS = [
-  '보드게임', '방탈출', '카드게임',
-  'PC게임', '콘솔게임', '모바일게임',
-  '파티게임', '마피아게임', '스포츠게임',
-  '온라인게임', '오프라인게임'
-];
 
 export default function ProfileEditPage() {
-  const { user } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +18,8 @@ export default function ProfileEditPage() {
   const [favoriteGameTitle, setFavoriteGameTitle] = useState("");
   const [recentGames, setRecentGames] = useState("");
   const [bio, setBio] = useState("");
+
+  const [customBadge, setCustomBadge] = useState("");
 
   const [customTagInput, setCustomTagInput] = useState("");
   const [showPremiumModal, setShowPremiumModal] = useState(false);
@@ -46,6 +42,7 @@ export default function ProfileEditPage() {
       if (error) throw error;
 
       setNickname(data.nickname || "");
+      setCustomBadge(data.custom_badge || "");
       setFavoriteGameCategories(data.favorite_game_categories || []);
       setBirthYear(data.birth_year?.toString() || "");
       setAgeRange(data.age_range || "");
@@ -60,14 +57,6 @@ export default function ProfileEditPage() {
       setLoading(false);
     }
   }
-
-  const toggleCategory = (category) => {
-    setFavoriteGameCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
-  };
 
   const addCustomTags = () => {
     const input = customTagInput.trim();
@@ -87,7 +76,7 @@ export default function ProfileEditPage() {
       return;
     }
 
-    if (!user.is_premium && user.ai_recommendations_left <= 0) {
+    if (!authProfile?.is_premium && (authProfile?.ai_recommendations_left ?? 3) <= 0) {
       setShowPremiumModal(true);
       return;
     }
@@ -108,11 +97,12 @@ export default function ProfileEditPage() {
       if (data.age_range) setAgeRange(data.age_range);
       if (data.location) setLocation(data.location);
 
-      if (!user.is_premium) {
+      if (!authProfile?.is_premium) {
         await supabase
           .from('profiles')
-          .update({ ai_recommendations_left: Math.max(0, user.ai_recommendations_left - 1) })
+          .update({ ai_recommendations_left: Math.max(0, (authProfile?.ai_recommendations_left ?? 3) - 1) })
           .eq('id', user.id);
+        await refreshProfile();
       }
 
       alert('AI가 프로필을 생성했습니다! 확인 후 수정하세요.');
@@ -131,18 +121,24 @@ export default function ProfileEditPage() {
     }
 
     try {
+      const profileData = {
+        nickname,
+        favorite_game_categories: favoriteGameCategories,
+        birth_year: birthYear ? parseInt(birthYear) : null,
+        age_range: ageRange || null,
+        location: location || null,
+        favorite_game_title: favoriteGameTitle || null,
+        recent_games: recentGames || null,
+        bio: bio || null,
+      };
+
+      if (authProfile?.is_premium) {
+        profileData.custom_badge = customBadge || null;
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          nickname,
-          favorite_game_categories: favoriteGameCategories,
-          birth_year: birthYear ? parseInt(birthYear) : null,
-          age_range: ageRange || null,
-          location: location || null,
-          favorite_game_title: favoriteGameTitle || null,
-          recent_games: recentGames || null,
-          bio: bio || null,
-        })
+        .update(profileData)
         .eq('id', user.id);
 
       if (error) throw error;
@@ -151,7 +147,7 @@ export default function ProfileEditPage() {
       navigate('/profile');
     } catch (error) {
       console.error('프로필 수정 실패:', error);
-      alert('프로필 수정에 실패했습니다.');
+      alert('프로필 수정에 실패했습니다: ' + (error.message || '알 수 없는 오류'));
     }
   }
 
@@ -213,6 +209,7 @@ export default function ProfileEditPage() {
           onClick={() => setShowAISection(!showAISection)}
           className="glass"
           style={{
+            position: 'relative',
             width: '100%',
             display: 'flex',
             alignItems: 'center',
@@ -229,6 +226,27 @@ export default function ProfileEditPage() {
         >
           <span>✨ AI로 프로필 자동 생성</span>
           <span>{showAISection ? '▼' : '▶'}</span>
+          {!authProfile?.is_premium && (
+            <span style={{
+              position: 'absolute',
+              top: '-7px',
+              right: '-7px',
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              backgroundColor: '#5a8a72',
+              color: '#FFFFFF',
+              fontSize: '11px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid white',
+              lineHeight: 1,
+            }}>
+              {authProfile?.ai_recommendations_left ?? 3}
+            </span>
+          )}
         </button>
 
         {showAISection && (
@@ -299,43 +317,82 @@ export default function ProfileEditPage() {
           />
         </div>
 
+        {/* 커스텀 뱃지 (프리미엄 전용) */}
+        <div>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-secondary)' }}>
+            커스텀 뱃지
+          </label>
+          {authProfile?.is_premium ? (
+            <>
+              <input
+                type="text"
+                value={customBadge}
+                onChange={(e) => {
+                  if (e.target.value.length <= 10) setCustomBadge(e.target.value);
+                }}
+                maxLength={10}
+                placeholder="닉네임 옆에 표시될 뱃지 (최대 10자)"
+                style={inputStyle}
+                onFocus={focusHandler}
+                onBlur={blurHandler}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  미리보기: <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{nickname || '닉네임'}</span>
+                  {customBadge && (
+                    <span style={{
+                      marginLeft: '6px',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500',
+                      backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                      color: 'var(--button-primary)',
+                    }}>
+                      {customBadge}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{customBadge.length}/10</span>
+              </div>
+            </>
+          ) : (
+            <div
+              onClick={() => setShowPremiumModal(true)}
+              style={{
+                padding: '12px 14px',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(0,0,0,0.02)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                🔒 프리미엄 회원 전용 기능입니다
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--button-primary)', fontWeight: '600' }}>
+                업그레이드
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* 선호 게임 태그 */}
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-            선호 게임 * (중복 선택 가능)
+            하고 싶은 것
           </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-            {GAME_TAGS.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => toggleCategory(tag)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  fontWeight: favoriteGameCategories.includes(tag) ? '600' : '400',
-                  backgroundColor: favoriteGameCategories.includes(tag) ? 'var(--button-primary)' : 'rgba(255,255,255,0.5)',
-                  color: favoriteGameCategories.includes(tag) ? '#FFFFFF' : 'var(--text-secondary)',
-                  ...(favoriteGameCategories.includes(tag) ? {} : { border: '1px solid rgba(0,0,0,0.06)' })
-                }}
-              >
-                {favoriteGameCategories.includes(tag) && "✓ "}
-                {tag}
-              </button>
-            ))}
-          </div>
-
           <div>
             <label style={{ display: 'block', fontSize: '12px', marginBottom: '6px', color: 'var(--text-muted)' }}>
-              또는 직접 태그 입력 (쉼표로 구분, Enter로 추가)
+              직접 태그 입력 (쉼표로 구분, Enter로 추가)
             </label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
-                placeholder="예) 초보환영, 20대, 강남"
+                placeholder="예) 경찰과 도둑, 스팀 게임, 배드민턴"
                 value={customTagInput}
                 onChange={(e) => setCustomTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTags(); } }}
@@ -372,51 +429,48 @@ export default function ProfileEditPage() {
                 선택된 태그
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {favoriteGameCategories.map((tag) => {
-                  const isPreset = GAME_TAGS.includes(tag);
-                  return (
-                    <span
-                      key={tag}
+                {favoriteGameCategories.map((tag) => (
+                  <span
+                    key={tag}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '5px 10px 5px 12px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      border: '2px solid #A8B8A5',
+                      backgroundColor: 'rgba(168,184,165,0.15)',
+                      color: '#5A7A6D',
+                    }}
+                  >
+                    #{tag}
+                    <button
+                      onClick={() => removeTag(tag)}
                       style={{
-                        display: 'inline-flex',
+                        display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        padding: '5px 10px 5px 12px',
-                        borderRadius: '20px',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        border: isPreset ? '2px solid #6B9080' : '2px solid #A8B8A5',
-                        backgroundColor: isPreset ? '#FFFFFF' : 'rgba(168,184,165,0.15)',
-                        color: isPreset ? '#6B9080' : '#5A7A6D',
+                        justifyContent: 'center',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        backgroundColor: 'rgba(168,184,165,0.25)',
+                        color: '#5A7A6D',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        lineHeight: 1,
+                        padding: 0,
+                        transition: 'all 0.2s',
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(168,184,165,0.4)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(168,184,165,0.25)'; }}
                     >
-                      #{tag}
-                      <button
-                        onClick={() => removeTag(tag)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          border: 'none',
-                          backgroundColor: isPreset ? 'rgba(107,144,128,0.15)' : 'rgba(168,184,165,0.25)',
-                          color: isPreset ? '#6B9080' : '#5A7A6D',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          lineHeight: 1,
-                          padding: 0,
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = isPreset ? 'rgba(107,144,128,0.3)' : 'rgba(168,184,165,0.4)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = isPreset ? 'rgba(107,144,128,0.15)' : 'rgba(168,184,165,0.25)'; }}
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  );
-                })}
+                      ✕
+                    </button>
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -457,7 +511,7 @@ export default function ProfileEditPage() {
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-secondary)' }}>지역</label>
           <input
             type="text"
-            placeholder="예: 강남구, 홍대"
+            placeholder="예) 강남구, 홍대"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             style={inputStyle}
@@ -466,14 +520,14 @@ export default function ProfileEditPage() {
           />
         </div>
 
-        {/* 최애 게임 */}
+        {/* 취미 */}
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-            가장 좋아하는 게임
+            취미
           </label>
           <input
             type="text"
-            placeholder="예: 스플렌더, 코드네임"
+            placeholder="예) 유튜브 보기, 뜨개질, 배드민턴"
             value={favoriteGameTitle}
             onChange={(e) => setFavoriteGameTitle(e.target.value)}
             style={inputStyle}
@@ -482,14 +536,14 @@ export default function ProfileEditPage() {
           />
         </div>
 
-        {/* 최근 플레이 */}
+        {/* 좋아하는 것 */}
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-            최근 플레이중인 게임
+            좋아하는 것
           </label>
           <input
             type="text"
-            placeholder="예: 발로란트, TFT"
+            placeholder="예) 보드게임, 고양이, 딸기"
             value={recentGames}
             onChange={(e) => setRecentGames(e.target.value)}
             style={inputStyle}

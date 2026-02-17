@@ -28,6 +28,7 @@ export default function NotificationsPage() {
           .from('notifications')
           .select('*')
           .eq('user_id', currentUser.id)
+          .eq('is_read', false)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -69,30 +70,34 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, [currentUser]);
 
+  const markAsRead = async (notificationId) => {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+  };
+
   const handleNotificationClick = async (notification) => {
-    try {
-      if (!notification.is_read) {
-        const { error } = await supabase
-          .from('notifications')
-          .update({ is_read: true })
-          .eq('id', notification.id);
+    let targetPath = null;
 
-        if (error) throw error;
-
-        setNotifications(notifications.map(n =>
-          n.id === notification.id ? { ...n, is_read: true } : n
-        ));
-      }
-
-      if (notification.gathering_id) {
-        navigate(`/gatherings/${notification.gathering_id}`);
-      }
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-      if (notification.gathering_id) {
-        navigate(`/gatherings/${notification.gathering_id}`);
-      }
+    if (notification.type === 'popularity_received') {
+      targetPath = '/popularity';
+    } else if (notification.gathering_id) {
+      targetPath = `/gatherings/${notification.gathering_id}`;
     }
+
+    await markAsRead(notification.id);
+    setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
+    if (targetPath) {
+      navigate(targetPath);
+    }
+  };
+
+  const handleDeleteNotification = async (e, notificationId) => {
+    e.stopPropagation();
+    await markAsRead(notificationId);
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
   };
 
   const getNotificationDisplay = (notification) => {
@@ -219,11 +224,11 @@ export default function NotificationsPage() {
                   padding: '16px 20px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  backgroundColor: notification.is_read ? 'transparent' : 'rgba(107,144,128,0.06)',
+                  backgroundColor: 'transparent',
                   borderBottom: index < notifications.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notification.is_read ? 'transparent' : 'rgba(107,144,128,0.06)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                   <div style={{
@@ -235,8 +240,7 @@ export default function NotificationsPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: '50%',
-                    backgroundColor: notification.is_read ? 'rgba(255,255,255,0.5)' : 'rgba(107,144,128,0.2)',
-                    opacity: notification.is_read ? 0.8 : 1
+                    backgroundColor: 'rgba(107,144,128,0.2)'
                   }}>
                     {display.icon}
                   </div>
@@ -247,7 +251,7 @@ export default function NotificationsPage() {
                       lineHeight: '1.6',
                       marginBottom: '4px',
                       color: 'var(--text-primary)',
-                      fontWeight: notification.is_read ? 400 : 600,
+                      fontWeight: 500,
                       margin: '0 0 4px 0'
                     }}>
                       {display.message}
@@ -257,16 +261,28 @@ export default function NotificationsPage() {
                     </p>
                   </div>
 
-                  {!notification.is_read && (
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      backgroundColor: 'var(--button-primary)',
+                  <button
+                    onClick={(e) => handleDeleteNotification(e, notification.id)}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
                       flexShrink: 0,
-                      marginTop: '8px'
-                    }} />
-                  )}
+                      fontSize: '16px',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
             );

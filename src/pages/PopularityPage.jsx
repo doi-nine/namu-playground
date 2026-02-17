@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,20 +9,53 @@ const voteTypes = [
     { id: 'punctual', label: '약속 시간을 잘 지켜요', emoji: '⏰' },
     { id: 'cheerful', label: '유쾌해요', emoji: '😄' },
     { id: 'active', label: '적극적이에요', emoji: '🔥' },
+    { id: 'vibe_maker', label: '분위기 메이커', emoji: '🎉' },
 ];
+
+const allVoteTypeInfo = {
+    thumbs_up: { label: '👍 좋아요', emoji: '👍' },
+    thumbs_down: { label: '👎 별로예요', emoji: '👎' },
+    kind: { label: '정말 친절해요', emoji: '😊' },
+    friendly: { label: '친화력이 좋아요', emoji: '🤝' },
+    punctual: { label: '약속 시간을 잘 지켜요', emoji: '⏰' },
+    cheerful: { label: '유쾌해요', emoji: '😄' },
+    active: { label: '적극적이에요', emoji: '🔥' },
+    vibe_maker: { label: '분위기 메이커', emoji: '🎉' },
+};
 
 export default function PopularityPage() {
     const navigate = useNavigate();
+    const { userId: paramUserId } = useParams();
     const { user, profile } = useAuth();
     const [scores, setScores] = useState(null);
     const [recentVoters, setRecentVoters] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [targetNickname, setTargetNickname] = useState(null);
+
+    // 다른 유저를 보는 경우
+    const isViewingOther = paramUserId && paramUserId !== user?.id;
+    const targetUserId = paramUserId || user?.id;
 
     useEffect(() => {
-        if (user) {
+        if (targetUserId) {
+            // 다른 유저를 보려면 프리미엄이어야 함
+            if (isViewingOther && !profile?.is_premium) {
+                navigate('/popularity');
+                return;
+            }
             fetchData();
+            if (isViewingOther) fetchTargetNickname();
         }
-    }, [user]);
+    }, [targetUserId, profile]);
+
+    async function fetchTargetNickname() {
+        const { data } = await supabase
+            .from('profiles')
+            .select('nickname')
+            .eq('id', paramUserId)
+            .maybeSingle();
+        setTargetNickname(data?.nickname || '알 수 없음');
+    }
 
     async function fetchData() {
         try {
@@ -31,7 +64,7 @@ export default function PopularityPage() {
             const { data: scoreData } = await supabase
                 .from('popularity_scores')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', targetUserId)
                 .maybeSingle();
 
             setScores(scoreData || {
@@ -46,7 +79,7 @@ export default function PopularityPage() {
             const { data: votesData } = await supabase
                 .from('popularity_votes')
                 .select('vote_type, created_at, is_active')
-                .eq('to_user_id', user.id)
+                .eq('to_user_id', targetUserId)
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
                 .limit(10);
@@ -102,7 +135,7 @@ export default function PopularityPage() {
             {/* 헤더 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                 <button
-                    onClick={() => navigate('/profile')}
+                    onClick={() => navigate(isViewingOther ? -1 : '/profile')}
                     style={{
                         padding: '6px',
                         backgroundColor: 'transparent',
@@ -119,7 +152,7 @@ export default function PopularityPage() {
                     </svg>
                 </button>
                 <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--button-primary)', margin: 0 }}>
-                    내 인기도
+                    {isViewingOther ? `${targetNickname}님의 인기도` : '내 인기도'}
                 </h1>
             </div>
 
@@ -238,7 +271,7 @@ export default function PopularityPage() {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {recentVoters.map((vote, index) => {
-                            const typeInfo = voteTypes.find(t => t.id === vote.vote_type);
+                            const typeInfo = allVoteTypeInfo[vote.vote_type];
                             if (!typeInfo) return null;
 
                             return (
@@ -256,7 +289,7 @@ export default function PopularityPage() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <span style={{ fontSize: '18px' }}>{typeInfo.emoji}</span>
                                         <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
-                                            누군가가 "{typeInfo.label}" 투표를 했어요
+                                            누군가가 "{typeInfo.label}" 평가를 했어요
                                         </span>
                                     </div>
                                     <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: '8px' }}>

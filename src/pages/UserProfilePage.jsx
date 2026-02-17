@@ -1,29 +1,30 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Star } from 'lucide-react';
 
-export default function ProfilePage() {
-  const { user } = useAuth();
+export default function UserProfilePage() {
+  const { userId } = useParams();
   const navigate = useNavigate();
+  const { profile: myProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [popularityScore, setPopularityScore] = useState(0);
 
   useEffect(() => {
-    if (user) {
+    if (userId) {
       fetchProfile();
       fetchPopularity();
     }
-  }, [user]);
+  }, [userId]);
 
   async function fetchProfile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userId)
         .maybeSingle();
 
       if (error) {
@@ -44,7 +45,7 @@ export default function ProfilePage() {
       const { data } = await supabase
         .from('popularity_scores')
         .select('total_score')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       setPopularityScore(data?.total_score || 0);
@@ -72,6 +73,30 @@ export default function ProfilePage() {
     );
   }
 
+  if (!profile) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>프로필을 찾을 수 없습니다.</p>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: 'var(--button-primary)',
+              color: 'white',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '500',
+            }}
+          >
+            뒤로 가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const innerCardStyle = {
     background: 'rgba(255,255,255,0.5)',
     backdropFilter: 'blur(10px)',
@@ -92,7 +117,7 @@ export default function ProfilePage() {
 
   return (
     <div style={{ position: 'relative', paddingTop: '300px' }}>
-      {/* 배너 영역 - 투명 */}
+      {/* 배너 영역 */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -103,7 +128,7 @@ export default function ProfilePage() {
         borderRadius: '16px 16px 0 0',
       }} />
 
-      {/* 닉네임 + 버튼 */}
+      {/* 닉네임 + 인기도 */}
       <div style={{
         position: 'absolute',
         top: '250px',
@@ -137,36 +162,40 @@ export default function ProfilePage() {
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {/* 인기도 버튼 */}
-          <button
-            onClick={() => navigate('/popularity')}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {profile?.is_premium && (
+            <span style={{ fontSize: '20px' }}>👑</span>
+          )}
+          <div
+            onClick={() => {
+              if (myProfile?.is_premium) {
+                navigate(`/popularity/${userId}`);
+              }
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
-              border: '1.6px solid #6B9080',
+              border: '2px solid #6B9080',
               borderRadius: '10px',
               background: '#FFFFFF',
-              cursor: 'pointer',
+              cursor: myProfile?.is_premium ? 'pointer' : 'default',
               transition: 'all 0.2s',
-              fontFamily: 'inherit',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+            onMouseEnter={(e) => { if (myProfile?.is_premium) e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
+            onMouseLeave={(e) => { if (myProfile?.is_premium) e.currentTarget.style.background = '#FFFFFF'; }}
           >
             <Star size={18} color="#EAB308" fill="#EAB308" />
             <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
               {popularityScore}
             </span>
-          </button>
-          {/* 수정 버튼 */}
+          </div>
           <button
-            onClick={() => navigate('/profile/edit')}
+            onClick={() => navigate(-1)}
             style={{
               padding: '8px 16px',
-              border: '1.6px solid #6B9080',
+              border: '2px solid #6B9080',
               borderRadius: '10px',
               background: '#FFFFFF',
               cursor: 'pointer',
@@ -179,7 +208,7 @@ export default function ProfilePage() {
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
           >
-            수정
+            뒤로
           </button>
         </div>
       </div>
@@ -193,9 +222,8 @@ export default function ProfilePage() {
       }}>
         {/* 왼쪽 열 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* 취미 카드 - 200px */}
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
-            <h3 style={cardTitleStyle}>취미</h3>
+            <h3 style={cardTitleStyle}>최근 게임</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
               {profile?.recent_games ? (
                 profile.recent_games.split(',').map((game, idx) => (
@@ -203,13 +231,14 @@ export default function ProfilePage() {
                 ))
               ) : profile?.favorite_game_title ? (
                 <p style={{ margin: 0 }}>• {profile.favorite_game_title}</p>
-              ) : null}
+              ) : (
+                <p style={{ margin: 0, color: 'var(--text-muted)' }}>등록된 게임이 없습니다</p>
+              )}
             </div>
           </div>
 
-          {/* 좋아하는 것 카드 - 200px */}
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
-            <h3 style={cardTitleStyle}>하고 싶은 것</h3>
+            <h3 style={cardTitleStyle}>선호하는 게임</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
               {profile?.favorite_game_categories?.length > 0 ? (
                 profile.favorite_game_categories.map((game, idx) => (
@@ -222,13 +251,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 오른쪽 열 - 왼쪽 열과 동일한 높이 (200+24+200=424px) */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '424px',
-        }}>
-          {/* 자기소개 카드 - flexGrow로 남은 공간 차지 */}
+        {/* 오른쪽 열 */}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '424px' }}>
           <div style={{
             ...innerCardStyle,
             flexGrow: 1,
@@ -265,13 +289,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 태그 - 하단 고정 (선호하는 게임 밑단과 동일선상) */}
           {profile?.favorite_game_categories?.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', flexShrink: 0 }}>
               {profile.favorite_game_categories.map((tag, idx) => (
-                <button
+                <span
                   key={idx}
-                  onClick={() => navigate(`/gatherings?search=${encodeURIComponent(tag)}`)}
                   style={{
                     padding: '6px 16px',
                     borderRadius: '20px',
@@ -280,15 +302,10 @@ export default function ProfilePage() {
                     color: '#6B9080',
                     fontSize: '13px',
                     fontWeight: '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    fontFamily: 'inherit',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(107,144,128,0.08)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
                 >
                   #{tag}
-                </button>
+                </span>
               ))}
             </div>
           )}

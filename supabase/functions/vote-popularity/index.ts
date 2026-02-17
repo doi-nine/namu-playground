@@ -25,21 +25,27 @@ serve(async (req) => {
 
     if (gathering_id) {
       // === 모임 완료 후 상호 평가 모드 ===
+      // service role 클라이언트 (RLS 우회하여 모든 조회/쓰기 가능)
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
 
       // 모임이 완료되었는지 확인
-      const { data: gathering } = await supabaseClient
+      const { data: gathering, error: gatheringErr } = await supabaseAdmin
         .from('gatherings')
         .select('id, is_completed, creator_id')
         .eq('id', gathering_id)
         .single()
 
+      if (gatheringErr) throw new Error(`모임 조회 실패: ${gatheringErr.message}`)
       if (!gathering) throw new Error('모임을 찾을 수 없습니다.')
       if (!gathering.is_completed) throw new Error('아직 완료되지 않은 모임입니다.')
 
       // 본인이 해당 모임의 approved 멤버이거나 모임장인지 확인
       const isCreator = gathering.creator_id === user.id
       if (!isCreator) {
-        const { data: membership } = await supabaseClient
+        const { data: membership } = await supabaseAdmin
           .from('gathering_members')
           .select('status')
           .eq('gathering_id', gathering_id)
@@ -54,7 +60,7 @@ serve(async (req) => {
       // 대상도 해당 모임의 approved 멤버이거나 모임장인지 확인
       const targetIsCreator = gathering.creator_id === target_user_id
       if (!targetIsCreator) {
-        const { data: targetMembership } = await supabaseClient
+        const { data: targetMembership } = await supabaseAdmin
           .from('gathering_members')
           .select('status')
           .eq('gathering_id', gathering_id)
@@ -67,7 +73,7 @@ serve(async (req) => {
       }
 
       // 동일 gathering_id + from_user + to_user + vote_type 중복 확인
-      const { data: existingGatheringVote } = await supabaseClient
+      const { data: existingGatheringVote } = await supabaseAdmin
         .from('popularity_votes')
         .select('id')
         .eq('from_user_id', user.id)
@@ -82,7 +88,7 @@ serve(async (req) => {
 
       // 새로운 투표 생성 (gathering_id 포함)
       if (is_active) {
-        await supabaseClient
+        const { error: voteInsertError } = await supabaseAdmin
           .from('popularity_votes')
           .insert({
             from_user_id: user.id,
@@ -92,24 +98,25 @@ serve(async (req) => {
             gathering_id
           })
 
-        // 알림 전송
-        const voteTypeNames: Record<string, string> = {
-          kind: '정말 친절해요',
-          friendly: '친화력이 좋아요',
-          punctual: '약속 시간을 잘 지켜요',
-          cheerful: '유쾌해요',
-          active: '적극적이에요'
+        if (voteInsertError) {
+          throw new Error(`투표 저장 실패: ${voteInsertError.message}`)
         }
 
-        await supabaseClient
-          .from('notifications')
-          .insert({
-            user_id: target_user_id,
-            type: 'popularity_received',
-            message: `누군가 회원님에게 "${voteTypeNames[vote_type]}" 인기도를 주었습니다! 👍`,
-            gathering_id,
-            related_user_id: null // 익명
-          })
+        // 인기도 점수는 프론트엔드에서 RPC(increment_popularity)로 직접 업데이트
+
+        // 알림 전송 (thumbs_up/thumbs_down만)
+        if (vote_type === 'thumbs_up' || vote_type === 'thumbs_down') {
+          const label = vote_type === 'thumbs_up' ? '👍 좋아요' : '👎 별로예요'
+          await supabaseAdmin
+            .from('notifications')
+            .insert({
+              user_id: target_user_id,
+              type: 'popularity_received',
+              message: `누군가 회원님에게 "${label}" 평가를 남겼습니다!`,
+              gathering_id,
+              related_user_id: null
+            })
+        }
       }
     } else {
       // === 기존 로직: 프리미엄 + 일일 제한 ===
@@ -220,10 +227,10 @@ serve(async (req) => {
     )
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 200
       }
     )
   }

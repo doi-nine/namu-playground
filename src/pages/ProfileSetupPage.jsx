@@ -1,25 +1,18 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const GAME_CATEGORIES = [
-  "경찰과 도둑",
-  "마피아 게임",
-  "보드게임",
-  "방탈출",
-  "PC 게임",
-  "콘솔 게임",
-  "모바일 게임",
-  "카드 게임",
-];
 
 export default function ProfileSetupPage() {
   const [mode, setMode] = useState(null);
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
 
   const [nickname, setNickname] = useState("");
   const [favoriteGameCategories, setFavoriteGameCategories] = useState([]);
+  const [tagInput, setTagInput] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [ageRange, setAgeRange] = useState("");
   const [location, setLocation] = useState("");
@@ -31,12 +24,25 @@ export default function ProfileSetupPage() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiResult, setAiResult] = useState(null);
 
-  const toggleCategory = (category) => {
-    setFavoriteGameCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
+  const addTag = (tag) => {
+    const trimmed = tag.trim();
+    if (trimmed && !favoriteGameCategories.includes(trimmed)) {
+      setFavoriteGameCategories((prev) => [...prev, trimmed]);
+    }
+    setTagInput("");
+  };
+
+  const removeTag = (tag) => {
+    setFavoriteGameCategories((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(tagInput);
+    } else if (e.key === "Backspace" && !tagInput && favoriteGameCategories.length > 0) {
+      removeTag(favoriteGameCategories[favoriteGameCategories.length - 1]);
+    }
   };
 
   const handleAIGenerate = async () => {
@@ -49,11 +55,14 @@ export default function ProfileSetupPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       const response = await supabase.functions.invoke('ai-profile', {
         body: { rawIntro },
         headers: {
-          Authorization: `Bearer ${session?.access_token}`
+          Authorization: session?.access_token
+            ? `Bearer ${session.access_token}`
+            : `Bearer ${anonKey}`
         }
       });
 
@@ -83,8 +92,8 @@ export default function ProfileSetupPage() {
   };
 
   const handleSubmit = async () => {
-    if (!nickname || favoriteGameCategories.length === 0) {
-      alert("닉네임과 선호 게임은 필수입니다!");
+    if (!nickname) {
+      alert("닉네임은 필수입니다!");
       return;
     }
 
@@ -122,7 +131,7 @@ export default function ProfileSetupPage() {
         return;
       }
 
-      console.log('프로필 저장 성공:', data);
+      await refreshProfile();
       setStep(4);
 
     } catch (error) {
@@ -148,7 +157,7 @@ export default function ProfileSetupPage() {
         }
       });
     } else {
-      navigate('/');
+      navigate('/gatherings');
     }
   };
 
@@ -184,7 +193,7 @@ export default function ProfileSetupPage() {
     color: 'var(--text-secondary)',
   };
 
-  const progress = mode === 'ai' ? (step / 4) * 100 : (step / 3) * 100;
+  const progress = Math.min(100, mode === 'ai' ? (step / 4) * 100 : (step / 3) * 100);
 
   const glassContainer = {
     width: '100%',
@@ -356,12 +365,12 @@ export default function ProfileSetupPage() {
             자기소개를 자유롭게 써주세요
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-            좋아하는 게임, 플레이 스타일, 만나고 싶은 사람 등 자유롭게 작성해주세요!
+            취미, 좋아하는 것, 참가하고 싶은 모임 등 자유롭게 작성해주세요!
           </p>
           <div>
             <label style={labelStyle}>자기소개</label>
             <textarea
-              placeholder="예: 안녕하세요! 보드게임 카페에서 친구들이랑 게임하는 걸 좋아합니다. 특히 마피아 게임이랑 코드네임을 즐겨하고, 주말에 시간이 많아서 새로운 사람들 만나서 같이 게임하고 싶어요."
+              placeholder="예) 넷플릭스, 고양이, 딸기 좋아함. 보드게임도 좋아함. 경찰과 도둑 해보고 싶음"
               value={rawIntro}
               onChange={(e) => setRawIntro(e.target.value)}
               style={{
@@ -406,7 +415,7 @@ export default function ProfileSetupPage() {
           padding: '24px',
         }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--text-primary)' }}>
-            닉네임과 선호 게임
+            닉네임과 하고 싶은 것
           </h2>
 
           <div style={{ marginBottom: '20px' }}>
@@ -423,35 +432,64 @@ export default function ProfileSetupPage() {
           </div>
 
           <div>
-            <label style={labelStyle}>선호하는 게임 * (중복 선택 가능)</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {GAME_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => toggleCategory(cat)}
+            <label style={labelStyle}>하고 싶은 것 (Enter로 추가)</label>
+            <div style={{
+              ...inputStyle,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '6px',
+              padding: '8px 10px',
+              minHeight: '44px',
+              alignItems: 'center',
+            }}>
+              {favoriteGameCategories.map((tag) => (
+                <span
+                  key={tag}
                   style={{
-                    padding: '6px 14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 10px',
                     borderRadius: '20px',
+                    background: 'var(--button-primary)',
+                    color: '#FFFFFF',
                     fontSize: '13px',
-                    border: favoriteGameCategories.includes(cat) ? 'none' : '1px solid rgba(0,0,0,0.06)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    fontWeight: favoriteGameCategories.includes(cat) ? '600' : '400',
-                    backgroundColor: favoriteGameCategories.includes(cat) ? 'var(--button-primary)' : 'rgba(255,255,255,0.5)',
-                    color: favoriteGameCategories.includes(cat) ? '#FFFFFF' : 'var(--text-secondary)',
-                    fontFamily: 'inherit',
+                    fontWeight: '500',
                   }}
                 >
-                  {favoriteGameCategories.includes(cat) && '✓ '}
-                  {cat}
-                </button>
+                  {tag}
+                  <span
+                    onClick={() => removeTag(tag)}
+                    style={{ cursor: 'pointer', fontSize: '15px', lineHeight: 1, marginLeft: '2px' }}
+                  >
+                    &times;
+                  </span>
+                </span>
               ))}
+              <input
+                type="text"
+                placeholder={favoriteGameCategories.length === 0 ? "예) 보드게임, 방탈출, 경찰과 도둑" : ""}
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: '14px',
+                  color: 'var(--text-primary)',
+                  flex: 1,
+                  minWidth: '80px',
+                  padding: '4px 0',
+                  fontFamily: 'inherit',
+                }}
+              />
             </div>
           </div>
 
           <button
             onClick={() => setStep(2)}
-            disabled={!nickname || favoriteGameCategories.length === 0}
+            disabled={!nickname}
             style={{
               width: '100%',
               padding: '14px',
@@ -462,8 +500,8 @@ export default function ProfileSetupPage() {
               borderRadius: '12px',
               fontSize: '15px',
               fontWeight: '600',
-              cursor: (!nickname || favoriteGameCategories.length === 0) ? 'not-allowed' : 'pointer',
-              opacity: (!nickname || favoriteGameCategories.length === 0) ? 0.5 : 1,
+              cursor: !nickname ? 'not-allowed' : 'pointer',
+              opacity: !nickname ? 0.5 : 1,
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'; }}
@@ -494,7 +532,7 @@ export default function ProfileSetupPage() {
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="number"
-                placeholder="태어난 년도 (예: 1995)"
+                placeholder="태어난 년도 (예) 1995)"
                 value={birthYear}
                 onChange={(e) => setBirthYear(e.target.value)}
                 style={{ ...inputStyle, flex: 1 }}
@@ -523,7 +561,7 @@ export default function ProfileSetupPage() {
             <label style={labelStyle}>지역</label>
             <input
               type="text"
-              placeholder="예: 강남구, 홍대"
+              placeholder="예) 서울, 부산, 경기도 군포"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               style={inputStyle}
@@ -532,28 +570,14 @@ export default function ProfileSetupPage() {
             />
           </div>
 
-          {/* 최애 게임 */}
+          {/* 취미 */}
           <div>
-            <label style={labelStyle}>가장 좋아하는 게임</label>
+            <label style={labelStyle}>취미</label>
             <input
               type="text"
-              placeholder="예: 스플렌더, 코드네임"
+              placeholder="예) 유튜브 보기, 뜨개질, 배드민턴"
               value={favoriteGameTitle}
               onChange={(e) => setFavoriteGameTitle(e.target.value)}
-              style={inputStyle}
-              onFocus={focusHandler}
-              onBlur={blurHandler}
-            />
-          </div>
-
-          {/* 최근 플레이 */}
-          <div>
-            <label style={labelStyle}>최근 플레이중인 게임</label>
-            <input
-              type="text"
-              placeholder="예: 발로란트, TFT"
-              value={recentGames}
-              onChange={(e) => setRecentGames(e.target.value)}
               style={inputStyle}
               onFocus={focusHandler}
               onBlur={blurHandler}
@@ -625,7 +649,7 @@ export default function ProfileSetupPage() {
             </div>
 
             <div>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>선호 게임</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>하고 싶은 것</span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
                 {favoriteGameCategories.map(cat => (
                   <span
@@ -662,15 +686,8 @@ export default function ProfileSetupPage() {
 
             {favoriteGameTitle && (
               <div>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>최애 게임</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>취미</span>
                 <p style={{ fontSize: '14px', color: 'var(--text-primary)', margin: '4px 0 0' }}>{favoriteGameTitle}</p>
-              </div>
-            )}
-
-            {recentGames && (
-              <div>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>최근 플레이</span>
-                <p style={{ fontSize: '14px', color: 'var(--text-primary)', margin: '4px 0 0' }}>{recentGames}</p>
               </div>
             )}
 
@@ -759,17 +776,17 @@ export default function ProfileSetupPage() {
               style={{
                 width: '100%',
                 padding: '14px',
-                backgroundColor: 'var(--button-primary)',
-                color: '#FFFFFF',
-                border: 'none',
+                backgroundColor: '#FFFFFF',
+                color: 'var(--button-primary)',
+                border: '2px solid var(--button-primary)',
                 borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.08)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
             >
               좋아요! 추천 받을래요
             </button>

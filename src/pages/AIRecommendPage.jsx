@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { Sparkles } from 'lucide-react';
 
 export default function AIRecommendPage() {
     const navigate = useNavigate();
@@ -15,16 +16,8 @@ export default function AIRecommendPage() {
     const profile = location.state?.justCreatedProfile || contextProfile;
 
     useEffect(() => {
-        if (!user) {
-            navigate('/login');
-            return;
-        }
-
-        if (!profile) {
-            navigate('/');
-            return;
-        }
-
+        if (!user) { navigate('/login'); return; }
+        if (!profile) { navigate('/'); return; }
         fetchGatherings();
     }, [user, profile, navigate]);
 
@@ -33,54 +26,43 @@ export default function AIRecommendPage() {
             const { data, error } = await supabase
                 .from('gatherings')
                 .select('*')
-                .order('created_at', { ascending: false });
-
+                .gte('datetime', new Date().toISOString())
+                .order('datetime', { ascending: true })
+                .limit(20);
             if (error) throw error;
-
-            setGatherings(data || []);
-
-            if (data && data.length > 0) {
-                await generateRecommendations(data);
+            const available = (data || []).filter(g => g.current_members < g.max_members);
+            setGatherings(available);
+            if (available.length > 0) {
+                await generateRecommendations(available);
             } else {
                 setLoading(false);
             }
         } catch (error) {
             console.error('모임 로드 오류:', error);
-            alert('모임을 불러오는데 실패했습니다.');
             setLoading(false);
         }
     }
 
     async function generateRecommendations(gatheringsData) {
-        if (!profile) {
-            setLoading(false);
-            return;
-        }
-
+        if (!profile) { setLoading(false); return; }
         if (!profile.is_premium && profile.ai_recommendations_left <= 0) {
             alert('AI 추천 횟수를 모두 사용했습니다.');
             navigate('/premium');
             return;
         }
-
         setGenerating(true);
         try {
             const { data, error } = await supabase.functions.invoke('ai-recommend', {
                 body: { profile, gatherings: gatheringsData }
             });
-
             if (error) throw error;
-
             const recs = data?.recommendations || [];
-
             if (recs.length === 0) {
                 alert('현재 조건에 맞는 모임을 찾지 못했습니다. 횟수는 차감되지 않았습니다.');
                 setRecommendations([]);
                 return;
             }
-
             setRecommendations(recs);
-
             if (!profile.is_premium) {
                 await supabase
                     .from('profiles')
@@ -89,7 +71,6 @@ export default function AIRecommendPage() {
             }
         } catch (error) {
             console.error('AI 추천 오류:', error);
-            alert('AI 추천 중 오류가 발생했습니다.');
             setRecommendations([]);
         } finally {
             setGenerating(false);
@@ -127,38 +108,36 @@ export default function AIRecommendPage() {
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
-            <button
-                onClick={() => navigate('/gatherings')}
-                style={{
-                    color: 'var(--button-primary)',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    marginBottom: '16px',
-                    padding: 0,
-                    fontWeight: '500'
-                }}
-            >
-                ← 모임 목록으로
-            </button>
 
-            <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--button-primary)' }}>
-                🎯 AI 맞춤 추천
-            </h1>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>
-                {profile?.nickname}님의 프로필을 기반으로 추천된 모임입니다
-            </p>
+            {/* 헤더 */}
+            <div style={{ marginBottom: '20px' }}>
+                <div className="glass-strong" style={{
+                    borderRadius: '16px',
+                    padding: '20px 24px',
+                }}>
+                    <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 2px 0' }}>
+                        {profile?.nickname}님을 위한 추천
+                    </p>
+                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                        프로필을 분석해 딱 맞는 모임 {recommendations.length}개를 찾았어요
+                    </p>
+                </div>
+            </div>
 
+            {/* 추천 결과 */}
             {recommendations.length === 0 ? (
-                <div className="glass-strong" style={{ padding: '48px', textAlign: 'center', borderRadius: '16px' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>😢</div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>추천할 모임이 없습니다</h2>
-                    <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>횟수는 차감되지 않았습니다.</p>
+                <div className="glass-strong" style={{ padding: '56px 24px', textAlign: 'center', borderRadius: '16px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>😢</div>
+                    <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                        추천할 모임이 없습니다
+                    </h2>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>
+                        횟수는 차감되지 않았습니다.
+                    </p>
                     <button
                         onClick={() => navigate('/gatherings')}
                         style={{
-                            padding: '12px 24px',
+                            padding: '12px 28px',
                             backgroundColor: 'var(--button-primary)',
                             color: '#FFFFFF',
                             borderRadius: '12px',
@@ -166,7 +145,7 @@ export default function AIRecommendPage() {
                             cursor: 'pointer',
                             fontSize: '14px',
                             fontWeight: '600',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
@@ -175,53 +154,126 @@ export default function AIRecommendPage() {
                     </button>
                 </div>
             ) : (
-                <div className="glass-strong" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+                <div className="glass" style={{ borderRadius: '16px', overflow: 'hidden' }}>
                     {recommendations.map((g, index) => (
                         <div
                             key={g.id}
                             onClick={() => navigate(`/gatherings/${g.id}`)}
                             style={{
-                                padding: '20px',
+                                padding: '20px 24px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
-                                borderBottom: index < recommendations.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                                borderBottom: index < recommendations.length - 1 ? '1px solid #E5E7EB' : 'none',
+                                position: 'relative',
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
                         >
-                            <span style={{
-                                display: 'inline-block',
-                                padding: '4px 10px',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                backgroundColor: '#FFFFFF',
-                                border: '2px solid #60A5FA',
-                                color: '#2563EB'
-                            }}>{g.category}</span>
+                            {/* 제목 */}
+                            <h3 style={{
+                                fontSize: '17px',
+                                fontWeight: '700',
+                                color: 'var(--button-primary)',
+                                margin: '0 0 6px 0',
+                                lineHeight: 1.3,
+                            }}>
+                                {g.title}
+                            </h3>
 
-                            <h3 style={{ fontSize: '17px', fontWeight: '600', marginTop: '8px', color: 'var(--text-primary)', marginBottom: '6px' }}>{g.title}</h3>
-                            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '10px' }}>{g.description}</p>
+                            {/* 카테고리 */}
+                            {g.category && (
+                                <span style={{
+                                    display: 'inline-block',
+                                    padding: '3px 10px',
+                                    borderRadius: '12px',
+                                    background: '#FFFFFF',
+                                    border: '2px solid #6B9080',
+                                    color: '#6B9080',
+                                    fontSize: '11px',
+                                    fontWeight: '500',
+                                    marginBottom: '8px',
+                                }}>
+                                    #{g.category}
+                                </span>
+                            )}
 
-                            <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                            {/* 설명 */}
+                            <p style={{
+                                fontSize: '14px',
+                                color: 'var(--text-secondary)',
+                                margin: '0 0 10px 0',
+                                lineHeight: 1.5,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                            }}>
+                                {g.description}
+                            </p>
+
+                            {/* 정보 */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '14px',
+                                fontSize: '13px',
+                                color: 'var(--text-muted)',
+                                marginBottom: g.reason ? '10px' : '0',
+                                flexWrap: 'wrap',
+                            }}>
                                 <span>📅 {formatDate(g.datetime)}</span>
                                 <span>📍 {g.location}</span>
                                 <span>👥 {g.current_members}/{g.max_members}명</span>
                             </div>
 
+                            {/* 추천 이유 */}
                             {g.reason && (
                                 <div style={{
-                                    marginTop: '10px',
-                                    padding: '10px 12px',
-                                    backgroundColor: 'rgba(122,184,142,0.1)',
-                                    border: '1px solid rgba(122,184,142,0.2)',
-                                    borderRadius: '10px'
+                                    padding: '10px 14px',
+                                    backgroundColor: 'rgba(107, 144, 128, 0.08)',
+                                    border: '1px solid rgba(107, 144, 128, 0.2)',
+                                    borderRadius: '10px',
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: '8px',
                                 }}>
-                                    <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: 0 }}>💡 추천 이유: {g.reason}</p>
+                                    <Sparkles size={14} color="var(--button-primary)" style={{ flexShrink: 0, marginTop: '1px' }} />
+                                    <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: 0, lineHeight: 1.5 }}>
+                                        {g.reason}
+                                    </p>
                                 </div>
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* 하단 버튼 */}
+            {recommendations.length > 0 && (
+                <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                    <button
+                        onClick={() => navigate('/gatherings')}
+                        style={{
+                            padding: '12px 28px',
+                            backgroundColor: 'transparent',
+                            color: 'var(--text-secondary)',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                        모든 모임 둘러보기
+                    </button>
                 </div>
             )}
         </div>

@@ -17,10 +17,6 @@ export default function ManageGatheringPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    datetime: '',
-    location: '',
-    onlinePlatform: '',
-    onlineLink: '',
     maxMembers: 0
   });
 
@@ -57,17 +53,9 @@ export default function ManageGatheringPage() {
 
       setGathering(data);
 
-      const datetime = new Date(data.datetime);
-      const dateStr = datetime.toISOString().split('T')[0];
-      const timeStr = datetime.toTimeString().slice(0, 5);
-
       setFormData({
         title: data.title,
         description: data.description,
-        datetime: `${dateStr}T${timeStr}`,
-        location: data.location || '',
-        onlinePlatform: data.online_platform || '',
-        onlineLink: data.online_link || '',
         maxMembers: data.max_members
       });
 
@@ -83,17 +71,11 @@ export default function ManageGatheringPage() {
     e.preventDefault();
 
     try {
-      const datetimeISO = new Date(formData.datetime).toISOString();
-
       const { error } = await supabase
         .from('gatherings')
         .update({
           title: formData.title,
           description: formData.description,
-          datetime: datetimeISO,
-          location: gathering.location_type === 'offline' ? formData.location : null,
-          online_platform: gathering.location_type === 'online' ? formData.onlinePlatform : null,
-          online_link: gathering.location_type === 'online' ? formData.onlineLink : null,
           max_members: parseInt(formData.maxMembers)
         })
         .eq('id', id);
@@ -195,42 +177,44 @@ export default function ManageGatheringPage() {
 
     setCompleting(true);
     try {
-      const { error } = await supabase
+      // 1단계: 모임 완료 처리
+      const { error: completeError } = await supabase
         .from('gatherings')
         .update({ is_completed: true })
         .eq('id', id);
 
-      if (error) throw error;
+      if (completeError) throw completeError;
 
-      // approved 멤버 목록 가져오기
-      const { data: membersData } = await supabase
-        .from('gathering_members')
-        .select('user_id')
-        .eq('gathering_id', id)
-        .eq('status', 'approved');
+      // 2단계: 알림 전송 (실패해도 완료 처리는 유지)
+      try {
+        const { data: membersData } = await supabase
+          .from('gathering_members')
+          .select('user_id')
+          .eq('gathering_id', id)
+          .eq('status', 'approved');
 
-      // 모임장 포함 모든 approved 멤버에게 알림 전송
-      const allMemberIds = [...new Set([
-        ...(membersData || []).map(m => m.user_id),
-        gathering.creator_id
-      ])].filter(uid => uid !== user.id); // 본인 제외
+        const allMemberIds = [...new Set([
+          ...(membersData || []).map(m => m.user_id),
+          gathering.creator_id
+        ])].filter(uid => uid !== user.id);
 
-      if (allMemberIds.length > 0) {
-        const notifications = allMemberIds.map(uid => ({
-          user_id: uid,
-          type: 'gathering_completed',
-          gathering_id: id,
-          related_user_id: user.id,
-        }));
-
-        await supabase.from('notifications').insert(notifications);
+        if (allMemberIds.length > 0) {
+          const notifications = allMemberIds.map(uid => ({
+            user_id: uid,
+            type: 'gathering_completed',
+            gathering_id: id,
+            related_user_id: user.id,
+          }));
+          await supabase.from('notifications').insert(notifications);
+        }
+      } catch (notifError) {
+        console.warn('알림 전송 실패 (무시됨):', notifError);
       }
 
-      alert('모임이 완료 처리되었습니다. 참가자들이 서로를 평가할 수 있습니다.');
-      fetchGathering();
+      navigate(`/gatherings/${id}`);
     } catch (error) {
       console.error('모임 완료 처리 오류:', error);
-      alert('모임 완료 처리 중 오류가 발생했습니다.');
+      alert('모임 완료 처리 중 오류가 발생했습니다: ' + (error.message || JSON.stringify(error)));
     } finally {
       setCompleting(false);
     }
@@ -281,9 +265,30 @@ export default function ManageGatheringPage() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px', color: 'var(--button-primary)' }}>
-        모임 관리
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        <button
+          onClick={() => navigate(`/gatherings/${id}`)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: '8px',
+            fontSize: '20px',
+            color: 'var(--button-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'background-color 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          ‹
+        </button>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: 'var(--button-primary)' }}>
+          모임 관리
+        </h1>
+      </div>
 
       {/* 모임 정보 수정 섹션 */}
       <div className="glass-strong" style={{ padding: '24px', borderRadius: '16px', marginBottom: '20px' }}>
@@ -349,31 +354,6 @@ export default function ManageGatheringPage() {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px', color: 'var(--text-secondary)' }}>날짜 및 시간</label>
-              <input type="datetime-local" value={formData.datetime} onChange={(e) => setFormData({ ...formData, datetime: e.target.value })} required style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
-            </div>
-
-            {gathering.location_type === 'offline' && (
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px', color: 'var(--text-secondary)' }}>장소</label>
-                <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
-              </div>
-            )}
-
-            {gathering.location_type === 'online' && (
-              <>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px', color: 'var(--text-secondary)' }}>온라인 플랫폼</label>
-                  <input type="text" value={formData.onlinePlatform} onChange={(e) => setFormData({ ...formData, onlinePlatform: e.target.value })} style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px', color: 'var(--text-secondary)' }}>온라인 링크</label>
-                  <input type="text" value={formData.onlineLink} onChange={(e) => setFormData({ ...formData, onlineLink: e.target.value })} style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
-                </div>
-              </>
-            )}
-
-            <div>
               <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px', color: 'var(--text-secondary)' }}>최대 인원</label>
               <input type="number" value={formData.maxMembers} onChange={(e) => setFormData({ ...formData, maxMembers: e.target.value })} min={gathering.current_members} required style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>현재 참가자 수: {gathering.current_members}명</p>
@@ -411,58 +391,8 @@ export default function ManageGatheringPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>제목:</strong> {gathering.title}</p>
             <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>설명:</strong> {gathering.description}</p>
-            <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>날짜:</strong> {new Date(gathering.datetime).toLocaleString('ko-KR')}</p>
-            <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>장소:</strong> {gathering.location_type === 'offline' ? gathering.location : `${gathering.online_platform} (${gathering.online_link})`}</p>
             <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>인원:</strong> {gathering.current_members}/{gathering.max_members}명</p>
           </div>
-        )}
-      </div>
-
-      {/* 모임 완료 섹션 */}
-      <div className="glass-strong" style={{ padding: '24px', borderRadius: '16px', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 12px 0' }}>모임 완료</h2>
-        {gathering.is_completed ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '14px 18px',
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
-            borderRadius: '12px',
-            border: '1px solid rgba(16, 185, 129, 0.2)'
-          }}>
-            <span style={{ fontSize: '20px' }}>✅</span>
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: '600', color: '#059669', margin: 0 }}>완료된 모임입니다</p>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>참가자들이 서로를 평가할 수 있습니다.</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '0 0 14px 0' }}>
-              모임이 끝나면 완료 처리해주세요. 완료 후 참가자들이 서로를 평가할 수 있습니다.
-            </p>
-            <button
-              onClick={handleCompleteGathering}
-              disabled={completing}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: completing ? 'rgba(0,0,0,0.06)' : '#059669',
-                color: completing ? 'var(--text-muted)' : 'white',
-                borderRadius: '10px',
-                border: 'none',
-                cursor: completing ? 'not-allowed' : 'pointer',
-                fontWeight: '600',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {completing ? '처리 중...' : '✅ 모임 완료'}
-            </button>
-          </>
         )}
       </div>
 

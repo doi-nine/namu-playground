@@ -6,7 +6,7 @@ import {
   Home, Search, Plus, List, User,
   Bell, LogOut, HelpCircle,
   ChevronRight, ChevronLeft, ChevronDown,
-  Settings
+  Settings, Sparkles
 } from 'lucide-react';
 
 export default function Layout({ children }) {
@@ -250,11 +250,10 @@ export default function Layout({ children }) {
       minHeight: '100vh',
       display: 'flex',
     }}>
-      {/* 메인 콘텐츠 영역 */}
+      {/* 메인 콘텐츠 영역 — 접힌 사이드바 기준 고정 */}
       <div style={{
         flex: 1,
-        marginRight: `${sidebarWidth + 40}px`,
-        transition: isTransitioning ? 'margin-right 300ms ease-in-out' : 'none',
+        marginRight: `${72 + 16}px`,
         minHeight: '100vh',
         padding: '24px',
         paddingBottom: '120px',
@@ -278,15 +277,15 @@ export default function Layout({ children }) {
       {/* 오른쪽 사이드바 */}
       <div style={{
         width: `${sidebarWidth}px`,
-        height: 'calc(100vh - 48px)',
+        height: 'calc(100vh - 24px)',
         position: 'fixed',
-        right: '24px',
+        right: 0,
         top: '24px',
         background: 'linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.2))',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid rgba(255,255,255,0.4)',
-        borderRadius: '24px',
+        borderRadius: '24px 0 0 24px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7)',
         display: 'flex',
         flexDirection: 'column',
@@ -425,11 +424,28 @@ export default function Layout({ children }) {
                     fontWeight: active ? '600' : '500',
                     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                     whiteSpace: 'nowrap',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
                   }}>
-                    {item.label}
-                    {item.path === '/profile' && profile?.is_premium && (
-                      <span style={{ marginLeft: '6px', fontSize: '12px' }}>👑</span>
-                    )}
+                    {item.path === '/profile' ? (
+                      <>
+                        {profile?.nickname || '내 프로필'}
+                        {profile?.custom_badge && (
+                          <span style={{
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '500',
+                            backgroundColor: 'rgba(107,144,128,0.15)',
+                            color: 'var(--button-primary)',
+                          }}>
+                            {profile.custom_badge}
+                          </span>
+                        )}
+                        {profile?.is_premium && <span style={{ fontSize: '12px' }}>👑</span>}
+                      </>
+                    ) : item.label}
                   </span>
                 )}
               </button>
@@ -569,7 +585,7 @@ export default function Layout({ children }) {
           </div>
         </div>
 
-        {/* 하단: 로그아웃 + 고객센터 */}
+        {/* 하단: 업그레이드 + 로그아웃 + 고객센터 */}
         <div style={{
           padding: '12px 8px',
           borderTop: '1px solid rgba(255,255,255,0.3)',
@@ -577,6 +593,36 @@ export default function Layout({ children }) {
           flexDirection: 'column',
           gap: '4px',
         }}>
+          {/* 무료 유저 전용 업그레이드 버튼 */}
+          {profile && !profile.is_premium && (
+            <button
+              onClick={() => navigate('/premium')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: sidebarOpen ? '10px 16px' : '10px 0',
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                background: 'linear-gradient(135deg, rgba(197,216,157,0.4), rgba(107,144,128,0.3))',
+                border: '1px solid rgba(107,144,128,0.35)',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                width: '100%',
+                fontFamily: 'inherit',
+                marginBottom: '2px',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(135deg, rgba(197,216,157,0.6), rgba(107,144,128,0.45))'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(135deg, rgba(197,216,157,0.4), rgba(107,144,128,0.3))'}
+            >
+              <Sparkles size={16} color="var(--button-primary)" />
+              {sidebarOpen && (
+                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--button-primary)', whiteSpace: 'nowrap' }}>
+                  요금제 업그레이드
+                </span>
+              )}
+            </button>
+          )}
           <button
             onClick={handleLogout}
             style={{

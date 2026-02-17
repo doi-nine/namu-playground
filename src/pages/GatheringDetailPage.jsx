@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import ChatTab from '../components/ChatTab';
@@ -9,6 +9,7 @@ export default function GatheringDetailPage() {
   const { user: authUser, profile } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [gathering, setGathering] = useState(null);
   const [creator, setCreator] = useState(null);
   const [members, setMembers] = useState([]);
@@ -17,12 +18,26 @@ export default function GatheringDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('info'); // 'info', 'chat', 'tools'
-  const [showEvalModal, setShowEvalModal] = useState(false);
-  const [evalVotes, setEvalVotes] = useState({}); // { [userId]: { kind: true, friendly: false, ... } }
-  const [existingVotes, setExistingVotes] = useState({}); // { [userId]: Set of vote_types already submitted }
-  const [evalSubmitting, setEvalSubmitting] = useState(false);
-  const [evalDone, setEvalDone] = useState(false);
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'info');
+
+  // 공지 관련 state
+  const [notices, setNotices] = useState([]);
+  const [noticeForm, setNoticeForm] = useState({ title: '', content: '' });
+  const [noticeSubmitting, setNoticeSubmitting] = useState(false);
+  const [showNoticeForm, setShowNoticeForm] = useState(false);
+  const [noticeFocused, setNoticeFocused] = useState(null);
+
+  // 일정 관련 state
+  const [schedules, setSchedules] = useState([]);
+  const [myScheduleMemberships, setMyScheduleMemberships] = useState({}); // { [scheduleId]: boolean }
+
+  // 일정 평가 관련 state
+  const [scheduleEvalDone, setScheduleEvalDone] = useState({}); // { [scheduleId]: boolean }
+  const [activeEvalScheduleId, setActiveEvalScheduleId] = useState(null);
+  const [scheduleEvalVotes, setScheduleEvalVotes] = useState({});
+  const [scheduleEvalKeywords, setScheduleEvalKeywords] = useState({});
+  const [scheduleEvalSubmitting, setScheduleEvalSubmitting] = useState(false);
+  const [evalScheduleMembers, setEvalScheduleMembers] = useState([]);
 
   const formatDateTime = (datetime) => {
     const date = new Date(datetime);
@@ -51,9 +66,8 @@ export default function GatheringDetailPage() {
         if (gatheringError) throw gatheringError;
         setGathering(gatheringData);
 
-        const { data: creatorData, error: creatorError } = await supabase.from('profiles').select('nickname, is_premium').eq('id', gatheringData.creator_id).single();
+        const { data: creatorData, error: creatorError } = await supabase.from('profiles').select('nickname, is_premium, custom_badge').eq('id', gatheringData.creator_id).single();
         if (creatorError) throw creatorError;
-        setCreator(creatorData);
 
         const { data: membersData, error: membersError } = await supabase
           .from('gathering_members')
@@ -61,7 +75,8 @@ export default function GatheringDetailPage() {
           *,
           profiles (
             nickname,
-            is_premium
+            is_premium,
+            custom_badge
           )
         `)
           .eq('gathering_id', id)
@@ -69,20 +84,23 @@ export default function GatheringDetailPage() {
 
         if (membersError) throw membersError;
 
-        // 프리미엄 회원의 인기도 점수도 가져오기
-        const premiumMemberIds = membersData?.filter(m => m.profiles?.is_premium).map(m => m.user_id) || [];
+        // 모든 멤버 + 모임장 인기도 점수 가져오기
+        const allMemberIds = membersData?.map(m => m.user_id) || [];
+        const allIds = [...new Set([...allMemberIds, gatheringData.creator_id])];
         let scoresMap = {};
 
-        if (premiumMemberIds.length > 0) {
+        if (allIds.length > 0) {
           const { data: scoresData } = await supabase
             .from('popularity_scores')
             .select('user_id, total_score')
-            .in('user_id', premiumMemberIds);
+            .in('user_id', allIds);
 
           scoresData?.forEach(score => {
             scoresMap[score.user_id] = score.total_score;
           });
         }
+
+        setCreator({ ...creatorData, popularity_score: scoresMap[gatheringData.creator_id] ?? 0 });
 
         // members에 점수 추가
         const enrichedMembers = membersData?.map(member => ({
@@ -104,11 +122,112 @@ export default function GatheringDetailPage() {
     }
   }, [id]);
 
+  // 공지 조회
+  const fetchNotices = async () => {
+    if (!id) return;
+    const { data, error } = await supabase
+      .from('notices')
+      .select('*')
+      .eq('gathering_id', id)
+      .order('created_at', { ascending: false });
+    if (!error) setNotices(data || []);
+  };
+
+  useEffect(() => {
+    if (id) fetchNotices();
+  }, [id]);
+
+  const handleCreateNotice = async () => {
+    if (!noticeForm.content.trim()) { alert('공지 내용을 입력해주세요.'); return; }
+    setNoticeSubmitting(true);
+    try {
+      const { error } = await supabase.from('notices').insert([{
+        gathering_id: id,
+        created_by: currentUser.id,
+        title: noticeForm.title.trim() || null,
+        content: noticeForm.content.trim(),
+      }]);
+      if (error) throw error;
+      setNoticeForm({ title: '', content: '' });
+      setShowNoticeForm(false);
+      fetchNotices();
+    } catch (err) {
+      alert('공지 작성 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setNoticeSubmitting(false);
+    }
+  };
+
+  const handleDeleteNotice = async (noticeId) => {
+    if (!confirm('이 공지를 삭제하시겠습니까?')) return;
+    try {
+      const { error } = await supabase.from('notices').delete().eq('id', noticeId);
+      if (error) throw error;
+      setNotices(prev => prev.filter(n => n.id !== noticeId));
+    } catch (err) {
+      alert('공지 삭제 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  // 일정 조회
+  const fetchSchedules = async () => {
+    if (!id) return;
+    try {
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('gathering_id', id)
+        .order('datetime', { ascending: true });
+
+      if (schedulesError) throw schedulesError;
+
+      setSchedules(schedulesData || []);
+
+      // 내 참여 여부 조회
+      if (currentUser) {
+        const scheduleIds = (schedulesData || []).map(s => s.id);
+        if (scheduleIds.length > 0) {
+          const { data: myMems } = await supabase
+            .from('schedule_members')
+            .select('schedule_id')
+            .eq('user_id', currentUser.id)
+            .in('schedule_id', scheduleIds);
+
+          const membershipMap = {};
+          (myMems || []).forEach(m => { membershipMap[m.schedule_id] = true; });
+          setMyScheduleMemberships(membershipMap);
+
+          // 완료된 일정 평가 여부 조회
+          const completedIds = (schedulesData || []).filter(s => s.is_completed).map(s => s.id);
+          if (completedIds.length > 0) {
+            const { data: evalData } = await supabase
+              .from('popularity_votes')
+              .select('schedule_id')
+              .eq('from_user_id', currentUser.id)
+              .in('schedule_id', completedIds);
+
+            const evalDoneMap = {};
+            (evalData || []).forEach(v => { evalDoneMap[v.schedule_id] = true; });
+            setScheduleEvalDone(evalDoneMap);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('일정 조회 오류:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (id && currentUser !== undefined) {
+      fetchSchedules();
+    }
+  }, [id, currentUser]);
+
   const refreshMembers = async () => {
     try {
       const { data: membersData } = await supabase
         .from('gathering_members')
-        .select('*, profiles (nickname, is_premium)')
+        .select('*, profiles (nickname, is_premium, custom_badge)')
         .eq('gathering_id', id)
         .eq('status', 'approved');
       setMembers(membersData || []);
@@ -196,7 +315,6 @@ export default function GatheringDetailPage() {
     }
   };
 
-
   const handleCopyLink = async () => {
     const url = window.location.href;
 
@@ -253,124 +371,174 @@ export default function GatheringDetailPage() {
     });
   };
 
-  const evalVoteTypes = [
-    { id: 'kind', label: '친절', emoji: '😊' },
-    { id: 'friendly', label: '친화력', emoji: '🤝' },
-    { id: 'punctual', label: '시간약속', emoji: '⏰' },
-    { id: 'cheerful', label: '유쾌', emoji: '😄' },
-    { id: 'active', label: '적극적', emoji: '🔥' },
-  ];
-
-  // 완료된 모임에서 기존 투표 조회
-  useEffect(() => {
-    const fetchExistingVotes = async () => {
-      if (!gathering?.is_completed || !currentUser) return;
-      const { data } = await supabase
-        .from('popularity_votes')
-        .select('to_user_id, vote_type')
-        .eq('from_user_id', currentUser.id)
-        .eq('gathering_id', id);
-
-      if (data && data.length > 0) {
-        const votesMap = {};
-        data.forEach(v => {
-          if (!votesMap[v.to_user_id]) votesMap[v.to_user_id] = new Set();
-          votesMap[v.to_user_id].add(v.vote_type);
-        });
-        setExistingVotes(votesMap);
-
-        // 모든 멤버에 대해 이미 투표했는지 확인
-        const allApprovedIds = getAllApprovedMemberIds();
-        const allVoted = allApprovedIds.length > 0 && allApprovedIds.every(uid => votesMap[uid] && votesMap[uid].size > 0);
-        if (allVoted) setEvalDone(true);
-      }
-    };
-    fetchExistingVotes();
-  }, [gathering?.is_completed, currentUser, members]);
-
-  const getAllApprovedMemberIds = () => {
-    const ids = members.map(m => m.user_id);
-    if (gathering?.creator_id) ids.push(gathering.creator_id);
-    return [...new Set(ids)].filter(uid => uid !== currentUser?.id);
-  };
-
-  const handleOpenEvalModal = () => {
-    // 초기화: 기존 투표가 있으면 반영
-    const initialVotes = {};
-    const targetIds = getAllApprovedMemberIds();
-    targetIds.forEach(uid => {
-      const existing = existingVotes[uid];
-      initialVotes[uid] = {};
-      evalVoteTypes.forEach(vt => {
-        initialVotes[uid][vt.id] = existing ? existing.has(vt.id) : false;
-      });
-    });
-    setEvalVotes(initialVotes);
-    setShowEvalModal(true);
-  };
-
-  const toggleEvalVote = (userId, voteType) => {
-    // 이미 서버에 저장된 투표는 토글 불가
-    if (existingVotes[userId]?.has(voteType)) return;
-    setEvalVotes(prev => ({
-      ...prev,
-      [userId]: {
-        ...prev[userId],
-        [voteType]: !prev[userId]?.[voteType]
-      }
-    }));
-  };
-
-  const handleSubmitEval = async () => {
-    setEvalSubmitting(true);
+  // 일정 참여
+  const handleJoinSchedule = async (scheduleId, currentCount) => {
+    if (!currentUser) { alert('로그인이 필요합니다.'); return; }
     try {
-      for (const [targetUserId, votes] of Object.entries(evalVotes)) {
-        for (const [voteType, isActive] of Object.entries(votes)) {
-          if (!isActive) continue;
-          if (existingVotes[targetUserId]?.has(voteType)) continue; // 이미 저장된 투표 건너뛰기
+      const { error: memberError } = await supabase
+        .from('schedule_members')
+        .insert([{ schedule_id: scheduleId, user_id: currentUser.id, status: 'approved' }]);
+      if (memberError) throw memberError;
 
-          const { data, error } = await supabase.functions.invoke('vote-popularity', {
-            body: {
-              target_user_id: targetUserId,
-              vote_type: voteType,
-              is_active: true,
-              gathering_id: id
-            }
-          });
+      const { error: updateError } = await supabase
+        .from('schedules')
+        .update({ current_members: currentCount + 1 })
+        .eq('id', scheduleId);
+      if (updateError) throw updateError;
 
-          if (error) {
-            console.error('투표 오류:', error);
-          }
-          if (data?.error) {
-            console.error('투표 오류:', data.error);
+      setMyScheduleMemberships(prev => ({ ...prev, [scheduleId]: true }));
+      setSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, current_members: currentCount + 1 } : s));
+    } catch (err) {
+      console.error('일정 참여 오류:', err);
+      alert('일정 참여 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  // 일정 참여 취소
+  const handleLeaveSchedule = async (scheduleId, currentCount) => {
+    if (!confirm('일정 참여를 취소하시겠습니까?')) return;
+    try {
+      const { error: deleteError } = await supabase
+        .from('schedule_members')
+        .delete()
+        .eq('schedule_id', scheduleId)
+        .eq('user_id', currentUser.id);
+      if (deleteError) throw deleteError;
+
+      const { error: updateError } = await supabase
+        .from('schedules')
+        .update({ current_members: Math.max(0, currentCount - 1) })
+        .eq('id', scheduleId);
+      if (updateError) throw updateError;
+
+      setMyScheduleMemberships(prev => { const next = { ...prev }; delete next[scheduleId]; return next; });
+      setSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, current_members: Math.max(0, currentCount - 1) } : s));
+    } catch (err) {
+      console.error('일정 취소 오류:', err);
+      alert('일정 취소 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  // 일정 종료
+  const handleCompleteSchedule = async (scheduleId) => {
+    if (!confirm('이 일정을 종료하시겠습니까?')) return;
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({ is_completed: true })
+        .eq('id', scheduleId);
+      if (error) throw error;
+      setSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, is_completed: true } : s));
+    } catch (err) {
+      console.error('일정 종료 오류:', err);
+      alert('일정 종료 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  // 일정 평가 모달 열기
+  const handleOpenScheduleEval = async (scheduleId) => {
+    try {
+      const { data: smData, error } = await supabase
+        .from('schedule_members')
+        .select('user_id, profiles(nickname, custom_badge)')
+        .eq('schedule_id', scheduleId);
+
+      if (error) throw error;
+
+      const others = (smData || []).filter(m => m.user_id !== currentUser.id);
+      setEvalScheduleMembers(others);
+
+      const initialVotes = {};
+      const initialKeywords = {};
+      others.forEach(m => { initialVotes[m.user_id] = null; initialKeywords[m.user_id] = []; });
+      setScheduleEvalVotes(initialVotes);
+      setScheduleEvalKeywords(initialKeywords);
+      setActiveEvalScheduleId(scheduleId);
+    } catch (err) {
+      console.error('평가 멤버 조회 오류:', err);
+      alert('평가 멤버 조회 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  const toggleScheduleEvalKeyword = (userId, keyword) => {
+    setScheduleEvalKeywords(prev => {
+      const current = prev[userId] || [];
+      const exists = current.includes(keyword);
+      return { ...prev, [userId]: exists ? current.filter(k => k !== keyword) : [...current, keyword] };
+    });
+  };
+
+  // 일정 평가 제출
+  const handleSubmitScheduleEval = async () => {
+    setScheduleEvalSubmitting(true);
+    const errors = [];
+    try {
+      for (const [targetUserId, direction] of Object.entries(scheduleEvalVotes)) {
+        if (!direction) continue;
+        const voteType = direction === 'up' ? 'thumbs_up' : 'thumbs_down';
+        const { data: result, error } = await supabase.rpc('submit_schedule_eval', {
+          p_from_user_id: currentUser.id,
+          p_to_user_id: targetUserId,
+          p_vote_type: voteType,
+          p_schedule_id: activeEvalScheduleId,
+        });
+        if (error) { errors.push(error.message); continue; }
+        if (result && !result.success) { errors.push(result.error); continue; }
+
+        if (direction === 'up') {
+          for (const keyword of (scheduleEvalKeywords[targetUserId] || [])) {
+            const { error: kwErr } = await supabase.rpc('submit_schedule_eval', {
+              p_from_user_id: currentUser.id,
+              p_to_user_id: targetUserId,
+              p_vote_type: keyword,
+              p_schedule_id: activeEvalScheduleId,
+            });
+            if (kwErr) errors.push(`키워드(${keyword}): ${kwErr.message}`);
           }
         }
       }
 
-      alert('평가가 완료되었습니다!');
-      setShowEvalModal(false);
-      setEvalDone(true);
+      setScheduleEvalDone(prev => ({ ...prev, [activeEvalScheduleId]: true }));
+      setActiveEvalScheduleId(null);
 
-      // 기존 투표 상태 갱신
-      const { data: updatedVotes } = await supabase
-        .from('popularity_votes')
-        .select('to_user_id, vote_type')
-        .eq('from_user_id', currentUser.id)
-        .eq('gathering_id', id);
-      if (updatedVotes) {
-        const votesMap = {};
-        updatedVotes.forEach(v => {
-          if (!votesMap[v.to_user_id]) votesMap[v.to_user_id] = new Set();
-          votesMap[v.to_user_id].add(v.vote_type);
-        });
-        setExistingVotes(votesMap);
+      if (errors.length > 0) {
+        alert('평가가 완료되었지만 일부 오류가 있었습니다:\n' + errors.join('\n'));
+      } else {
+        alert('평가가 완료되었습니다!');
       }
     } catch (err) {
       console.error('평가 제출 오류:', err);
-      alert('평가 제출 중 오류가 발생했습니다.');
+      alert('평가 제출 중 오류가 발생했습니다: ' + err.message);
     } finally {
-      setEvalSubmitting(false);
+      setScheduleEvalSubmitting(false);
     }
+  };
+
+  const evalKeywordTypes = [
+    { id: 'kind', label: '정말 친절해요' },
+    { id: 'friendly', label: '친화력이 좋아요' },
+    { id: 'punctual', label: '약속 시간을 잘 지켜요' },
+    { id: 'cheerful', label: '유쾌해요' },
+    { id: 'active', label: '적극적이에요' },
+    { id: 'vibe_maker', label: '분위기 메이커' },
+  ];
+
+  const refreshScores = async () => {
+    if (!gathering) return;
+    const allMemberIds = members.map(m => m.user_id);
+    const allIds = [...new Set([...allMemberIds, gathering.creator_id])];
+    if (allIds.length === 0) return;
+
+    const { data: scoresData } = await supabase
+      .from('popularity_scores')
+      .select('user_id, total_score')
+      .in('user_id', allIds);
+
+    const scoresMap = {};
+    scoresData?.forEach(s => { scoresMap[s.user_id] = s.total_score; });
+
+    setCreator(prev => prev ? { ...prev, popularity_score: scoresMap[gathering.creator_id] ?? 0 } : prev);
+    setMembers(prev => prev.map(m => ({ ...m, popularity_score: scoresMap[m.user_id] ?? 0 })));
   };
 
   if (error || !gathering) {
@@ -404,34 +572,21 @@ export default function GatheringDetailPage() {
   const isCreator = currentUser && gathering.creator_id === currentUser.id;
   const nonCreatorMembers = members.filter(m => m.user_id !== gathering.creator_id);
   const actualMemberCount = nonCreatorMembers.length + (creator ? 1 : 0);
-  const isFull = actualMemberCount >= gathering.max_members;
   const memberStatus = myMembership?.status;
   const isApprovedMember = myMembership?.status === 'approved' || isCreator;
-  const showEvalBanner = gathering.is_completed && isApprovedMember && currentUser;
+
+  // 일정 정렬: 미완료 오름차순 → 완료 오름차순
+  const sortedSchedules = [...schedules].sort((a, b) => {
+    if (a.is_completed !== b.is_completed) return a.is_completed ? 1 : -1;
+    return new Date(a.datetime) - new Date(b.datetime);
+  });
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       {/* Main Card */}
-      <div
-        style={{
-          padding: '28px 4px',
-        }}
-      >
-        {/* Location Badge + Edit Button */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '4px 12px',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: '500',
-              backgroundColor: gathering.location_type === 'offline' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(139, 92, 246, 0.15)',
-              color: gathering.location_type === 'offline' ? '#B45309' : '#7C3AED'
-            }}
-          >
-            {gathering.location_type === 'offline' ? '오프라인' : '온라인'}
-          </span>
+      <div style={{ padding: '28px 4px' }}>
+        {/* Edit Button */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '12px' }}>
           {isCreator && (
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -440,13 +595,15 @@ export default function GatheringDetailPage() {
                   padding: '5px 14px',
                   fontSize: '13px',
                   fontWeight: '500',
-                  backgroundColor: 'var(--premium-gold)',
-                  color: '#FFFFFF',
-                  border: 'none',
+                  backgroundColor: '#FFFFFF',
+                  color: 'var(--button-primary)',
+                  border: '1px solid var(--button-primary)',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s',
+                  transition: 'all 0.2s',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
               >
                 관리
               </button>
@@ -477,22 +634,6 @@ export default function GatheringDetailPage() {
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
             {gathering.title}
           </h1>
-          {gathering.is_completed && (
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '3px 10px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              color: '#059669',
-              flexShrink: 0,
-            }}>
-              ✅ 완료
-            </span>
-          )}
         </div>
 
         {/* Tags */}
@@ -539,7 +680,9 @@ export default function GatheringDetailPage() {
           gap: '4px'
         }}>
           {[
-            { key: 'info', label: '모임 정보' },
+            { key: 'info', label: '모임' },
+            { key: 'notices', label: '공지' },
+            { key: 'schedules', label: '일정' },
             { key: 'chat', label: '대화' },
             { key: 'tools', label: '도구' }
           ].map((tab) => (
@@ -547,14 +690,14 @@ export default function GatheringDetailPage() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
-                padding: '12px 24px',
+                padding: '12px 20px',
                 background: 'none',
                 border: 'none',
                 borderBottom: activeTab === tab.key ? '3px solid var(--button-primary)' : '3px solid transparent',
                 color: activeTab === tab.key ? 'var(--button-primary)' : 'var(--text-muted)',
                 fontWeight: activeTab === tab.key ? '600' : '400',
                 cursor: 'pointer',
-                fontSize: '16px',
+                fontSize: '15px',
                 transition: 'all 0.2s'
               }}
             >
@@ -566,50 +709,19 @@ export default function GatheringDetailPage() {
         {/* Tab Content */}
         {activeTab === 'info' && (
           <div>
-            {/* 평가 배너 */}
-            {showEvalBanner && (
-              <div
-                onClick={handleOpenEvalModal}
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: '14px',
-                  marginBottom: '16px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  backgroundColor: evalDone ? 'rgba(16, 185, 129, 0.08)' : 'rgba(107, 144, 128, 0.1)',
-                  border: evalDone ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(107, 144, 128, 0.2)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <span style={{ fontSize: '24px' }}>{evalDone ? '✅' : '⭐'}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
-                    {evalDone ? '평가를 완료했습니다!' : '모임이 완료되었습니다. 함께한 멤버를 평가해주세요!'}
-                  </p>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                    {evalDone ? '클릭하여 평가 내용을 확인하세요' : '클릭하여 평가하기'}
-                  </p>
-                </div>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </div>
-            )}
-
-            {/* Gathering Info */}
-            <div style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.75)',
-              borderRadius: '14px',
-              padding: '20px',
-              marginBottom: '16px',
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)' }}>
-                <div>📅 {formatDateTime(gathering.datetime)}</div>
-                <div>📍 {gathering.location}</div>
-                <div>👥 {actualMemberCount} / {gathering.max_members}명</div>
-              </div>
+            {/* Description Section */}
+            <div
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                borderRadius: '14px',
+                padding: '24px',
+                marginBottom: '16px',
+              }}
+            >
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                {gathering.description_title || '모임 설명'}
+              </h2>
+              <p style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.625' }}>{gathering.description}</p>
 
               {gathering.approval_required && !isCreator && (
                 <div style={{
@@ -626,21 +738,6 @@ export default function GatheringDetailPage() {
               )}
             </div>
 
-            {/* Description Section */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                borderRadius: '14px',
-                padding: '24px',
-                marginBottom: '16px',
-              }}
-            >
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-primary)' }}>
-                {gathering.description_title || '모임 설명'}
-              </h2>
-              <p style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.625' }}>{gathering.description}</p>
-            </div>
-
             {/* Members Section */}
             <div
               style={{
@@ -650,11 +747,12 @@ export default function GatheringDetailPage() {
                 marginBottom: '16px',
               }}
             >
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-primary)' }}>참가자 ({actualMemberCount}명)</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-primary)' }}>멤버 ({actualMemberCount}명)</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* 모임장 */}
                 {creator && (
                   <div
+                    onClick={() => navigate(`/users/${gathering.creator_id}`)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -662,16 +760,13 @@ export default function GatheringDetailPage() {
                       padding: '12px 16px',
                       backgroundColor: 'rgba(107, 144, 128, 0.12)',
                       borderRadius: '10px',
-                      transition: 'background-color 0.2s'
+                      transition: 'background-color 0.2s',
+                      cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107, 144, 128, 0.2)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(107, 144, 128, 0.12)'}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{creator.nickname}</span>
-                      {creator.is_premium && (
-                        <span style={{ fontSize: '12px' }}>👑</span>
-                      )}
                       <span style={{
                         fontSize: '11px',
                         padding: '1px 8px',
@@ -682,15 +777,28 @@ export default function GatheringDetailPage() {
                       }}>
                         모임장
                       </span>
+                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{creator.nickname}</span>
+                      {creator.custom_badge && (
+                        <span style={{
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                          color: 'var(--button-primary)',
+                        }}>
+                          {creator.custom_badge}
+                        </span>
+                      )}
                     </div>
 
-                    {profile?.is_premium && creator.is_premium && (
+                    {(profile?.is_premium || currentUser?.id === gathering.creator_id) && creator.popularity_score !== undefined && (
                       <span style={{
                         fontSize: '14px',
                         fontWeight: 'bold',
-                        color: '#16A34A'
+                        color: creator.popularity_score >= 0 ? '#16A34A' : 'var(--danger)'
                       }}>
-                        ⭐ +0
+                        ⭐ {creator.popularity_score >= 0 ? '+' : ''}{creator.popularity_score}
                       </span>
                     )}
                   </div>
@@ -700,6 +808,7 @@ export default function GatheringDetailPage() {
                 {members.filter(m => m.user_id !== gathering.creator_id).map((member) => (
                   <div
                     key={member.id}
+                    onClick={() => navigate(`/users/${member.user_id}`)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -707,20 +816,29 @@ export default function GatheringDetailPage() {
                       padding: '12px 16px',
                       backgroundColor: 'rgba(0,0,0,0.03)',
                       borderRadius: '10px',
-                      transition: 'background-color 0.2s'
+                      transition: 'background-color 0.2s',
+                      cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)'}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{member.profiles?.nickname || '익명'}</span>
-                      {member.profiles?.is_premium && (
-                        <span style={{ fontSize: '12px' }}>👑</span>
+                      {member.profiles?.custom_badge && (
+                        <span style={{
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                          color: 'var(--button-primary)',
+                        }}>
+                          {member.profiles.custom_badge}
+                        </span>
                       )}
                     </div>
 
-                    {/* 프리미엄 회원만 인기도 표시 */}
-                    {profile?.is_premium && member.profiles?.is_premium && member.popularity_score !== undefined && (
+                    {(profile?.is_premium || currentUser?.id === member.user_id) && member.popularity_score !== undefined && (
                       <span style={{
                         fontSize: '14px',
                         fontWeight: 'bold',
@@ -811,148 +929,445 @@ export default function GatheringDetailPage() {
               </div>
             </div>
 
-            {/* Action Buttons - inline below share section */}
-            {!isCreator && !gathering.is_completed && (
+            {/* Action Buttons */}
+            {!isCreator && (
               <div style={{ marginTop: '16px' }}>
-                {!isCreator && (
-                  <>
-                    {!myMembership && !isFull && !gathering.approval_required && (
-                      <button
-                        onClick={handleJoin}
+                {!myMembership && !gathering.approval_required && (
+                  <button
+                    onClick={handleJoin}
+                    style={{
+                      width: '100%',
+                      padding: '14px 0',
+                      backgroundColor: 'var(--button-primary)',
+                      color: 'white',
+                      borderRadius: '12px',
+                      fontWeight: 'bold',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
+                  >
+                    모임 가입하기
+                  </button>
+                )}
+                {!myMembership && gathering.approval_required && (
+                  <button
+                    onClick={handleApply}
+                    style={{
+                      width: '100%',
+                      padding: '14px 0',
+                      backgroundColor: 'var(--button-primary-hover)',
+                      color: 'white',
+                      borderRadius: '12px',
+                      fontWeight: 'bold',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '16px'
+                    }}
+                  >
+                    가입 신청하기
+                  </button>
+                )}
+                {myMembership && myMembership.status === 'pending' && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      disabled
+                      style={{
+                        flex: 1,
+                        padding: '14px 0',
+                        backgroundColor: 'rgba(0,0,0,0.06)',
+                        color: 'var(--text-muted)',
+                        borderRadius: '12px',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        cursor: 'not-allowed',
+                        fontSize: '16px'
+                      }}
+                    >
+                      승인 대기중...
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      style={{
+                        flex: 1,
+                        padding: '14px 0',
+                        backgroundColor: '#EF4444',
+                        color: 'white',
+                        borderRadius: '12px',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
+                    >
+                      신청 취소
+                    </button>
+                  </div>
+                )}
+                {myMembership && myMembership.status === 'approved' && (
+                  <button
+                    onClick={handleCancel}
+                    style={{
+                      width: '100%',
+                      padding: '14px 0',
+                      backgroundColor: '#EF4444',
+                      color: 'white',
+                      borderRadius: '12px',
+                      fontWeight: 'bold',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
+                  >
+                    모임 탈퇴
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── 공지 탭 ─── */}
+        {activeTab === 'notices' && (
+          <div>
+            {isCreator && (
+              <div style={{ marginBottom: '16px' }}>
+                {!showNoticeForm ? (
+                  <button
+                    onClick={() => setShowNoticeForm(true)}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: 'var(--button-primary)',
+                      color: 'white',
+                      borderRadius: '10px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
+                  >
+                    + 공지 작성
+                  </button>
+                ) : (
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '14px', padding: '20px', marginBottom: '8px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '14px', color: 'var(--text-primary)' }}>새 공지 작성</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <input
+                        type="text"
+                        placeholder="제목 (선택)"
+                        value={noticeForm.title}
+                        onChange={(e) => setNoticeForm(prev => ({ ...prev, title: e.target.value }))}
+                        onFocus={() => setNoticeFocused('title')}
+                        onBlur={() => setNoticeFocused(null)}
                         style={{
-                          width: '100%',
-                          padding: '14px 0',
-                          backgroundColor: 'var(--button-primary)',
-                          color: 'white',
-                          borderRadius: '12px',
-                          fontWeight: 'bold',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          transition: 'background-color 0.2s'
+                          width: '100%', padding: '10px 14px', fontSize: '14px',
+                          border: `1px solid ${noticeFocused === 'title' ? 'var(--button-primary)' : 'rgba(0,0,0,0.1)'}`,
+                          borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.7)',
+                          color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box',
+                          boxShadow: noticeFocused === 'title' ? '0 0 0 3px rgba(107,144,128,0.15)' : 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
-                      >
-                        참가하기
-                      </button>
-                    )}
-                    {!myMembership && !isFull && gathering.approval_required && (
-                      <button
-                        onClick={handleApply}
+                      />
+                      <textarea
+                        placeholder="공지 내용을 입력하세요 *"
+                        value={noticeForm.content}
+                        onChange={(e) => setNoticeForm(prev => ({ ...prev, content: e.target.value }))}
+                        onFocus={() => setNoticeFocused('content')}
+                        onBlur={() => setNoticeFocused(null)}
+                        rows={4}
                         style={{
-                          width: '100%',
-                          padding: '14px 0',
-                          backgroundColor: 'var(--button-primary-hover)',
-                          color: 'white',
-                          borderRadius: '12px',
-                          fontWeight: 'bold',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '16px'
+                          width: '100%', padding: '10px 14px', fontSize: '14px',
+                          border: `1px solid ${noticeFocused === 'content' ? 'var(--button-primary)' : 'rgba(0,0,0,0.1)'}`,
+                          borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.7)',
+                          color: 'var(--text-primary)', outline: 'none', resize: 'none', boxSizing: 'border-box',
+                          boxShadow: noticeFocused === 'content' ? '0 0 0 3px rgba(107,144,128,0.15)' : 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
                         }}
-                      >
-                        지원하기
-                      </button>
-                    )}
-                    {myMembership && myMembership.status === 'pending' && (
+                      />
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
-                          disabled
+                          onClick={handleCreateNotice}
+                          disabled={noticeSubmitting}
                           style={{
-                            flex: 1,
-                            padding: '14px 0',
-                            backgroundColor: 'rgba(0,0,0,0.06)',
-                            color: 'var(--text-muted)',
-                            borderRadius: '12px',
-                            fontWeight: 'bold',
-                            border: 'none',
-                            cursor: 'not-allowed',
-                            fontSize: '16px'
+                            flex: 1, padding: '10px 0',
+                            backgroundColor: noticeSubmitting ? 'rgba(0,0,0,0.06)' : 'var(--button-primary)',
+                            color: noticeSubmitting ? 'var(--text-muted)' : 'white',
+                            borderRadius: '10px', border: 'none',
+                            cursor: noticeSubmitting ? 'not-allowed' : 'pointer',
+                            fontWeight: '600', fontSize: '14px',
                           }}
                         >
-                          승인 대기중...
+                          {noticeSubmitting ? '등록 중...' : '공지 등록'}
                         </button>
                         <button
-                          onClick={handleCancel}
+                          onClick={() => { setShowNoticeForm(false); setNoticeForm({ title: '', content: '' }); }}
                           style={{
-                            flex: 1,
-                            padding: '14px 0',
-                            backgroundColor: '#EF4444',
-                            color: 'white',
-                            borderRadius: '12px',
-                            fontWeight: 'bold',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '16px',
-                            transition: 'background-color 0.2s'
+                            flex: 1, padding: '10px 0',
+                            backgroundColor: 'rgba(0,0,0,0.06)', color: 'var(--text-secondary)',
+                            borderRadius: '10px', border: 'none', cursor: 'pointer',
+                            fontWeight: '500', fontSize: '14px',
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
                         >
-                          신청 취소
+                          취소
                         </button>
                       </div>
-                    )}
-                    {myMembership && myMembership.status === 'approved' && (
-                      <button
-                        onClick={handleCancel}
-                        style={{
-                          width: '100%',
-                          padding: '14px 0',
-                          backgroundColor: '#EF4444',
-                          color: 'white',
-                          borderRadius: '12px',
-                          fontWeight: 'bold',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
-                      >
-                        참가 취소
-                      </button>
-                    )}
-                    {myMembership && myMembership.status === 'rejected' && (
-                      <button
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '14px 0',
-                          backgroundColor: 'rgba(0,0,0,0.06)',
-                          color: 'var(--text-muted)',
-                          borderRadius: '12px',
-                          fontWeight: 'bold',
-                          border: 'none',
-                          cursor: 'not-allowed',
-                          fontSize: '16px'
-                        }}
-                      >
-                        거절되었습니다
-                      </button>
-                    )}
-                    {isFull && !myMembership && (
-                      <button
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '14px 0',
-                          backgroundColor: 'rgba(0,0,0,0.06)',
-                          color: 'var(--text-muted)',
-                          borderRadius: '12px',
-                          fontWeight: 'bold',
-                          border: 'none',
-                          cursor: 'not-allowed',
-                          fontSize: '16px'
-                        }}
-                      >
-                        마감됨
-                      </button>
-                    )}
-                  </>
+                    </div>
+                  </div>
                 )}
+              </div>
+            )}
+
+            {notices.length === 0 ? (
+              <div style={{
+                textAlign: 'center', padding: '48px 24px',
+                backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '14px',
+              }}>
+                <p style={{ fontSize: '16px', color: 'var(--text-muted)' }}>등록된 공지가 없습니다.</p>
+                {isCreator && (
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                    위의 버튼으로 첫 공지를 작성해보세요!
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {notices.map((notice) => (
+                  <div
+                    key={notice.id}
+                    style={{
+                      backgroundColor: 'rgba(255,255,255,0.75)',
+                      borderRadius: '14px',
+                      padding: '20px',
+                      border: '1px solid rgba(107,144,128,0.15)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          fontSize: '11px', padding: '2px 8px', borderRadius: '6px',
+                          backgroundColor: 'rgba(107,144,128,0.15)', color: 'var(--button-primary)', fontWeight: '600',
+                        }}>공지</span>
+                        {notice.title && (
+                          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+                            {notice.title}
+                          </h3>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {new Date(notice.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                        </span>
+                        {isCreator && (
+                          <button
+                            onClick={() => handleDeleteNotice(notice.id)}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              fontSize: '13px', color: 'var(--text-muted)', padding: '2px 6px',
+                              borderRadius: '6px', transition: 'color 0.2s',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger)'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.7', margin: 0 }}>
+                      {notice.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── 일정 탭 ─── */}
+        {activeTab === 'schedules' && (
+          <div>
+            {isApprovedMember && (
+              <div style={{ marginBottom: '16px' }}>
+                <button
+                  onClick={() => navigate(`/gatherings/${id}/schedules/create`)}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: 'var(--button-primary)',
+                    color: 'white',
+                    borderRadius: '10px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
+                >
+                  + 일정 추가
+                </button>
+              </div>
+            )}
+
+            {sortedSchedules.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '48px 24px',
+                backgroundColor: 'rgba(255,255,255,0.6)',
+                borderRadius: '14px',
+              }}>
+                <p style={{ fontSize: '16px', color: 'var(--text-muted)' }}>등록된 일정이 없습니다.</p>
+                {isApprovedMember && (
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                    위의 버튼으로 첫 일정을 추가해보세요!
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {sortedSchedules.map((schedule) => {
+                  const isMySchedule = myScheduleMemberships[schedule.id];
+                  const isScheduleCreator = currentUser && schedule.created_by === currentUser.id;
+                  const isFull = schedule.current_members >= schedule.max_members;
+                  const canEval = schedule.is_completed && isMySchedule && !scheduleEvalDone[schedule.id];
+
+                  return (
+                    <div
+                      key={schedule.id}
+                      onClick={() => navigate(`/gatherings/${id}/schedules/${schedule.id}`)}
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.75)',
+                        borderRadius: '14px',
+                        padding: '20px',
+                        border: schedule.is_completed ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(0,0,0,0.06)',
+                        opacity: schedule.is_completed ? 0.85 : 1,
+                        cursor: 'pointer',
+                        transition: 'box-shadow 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
+                      onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
+                          {schedule.title}
+                          {schedule.is_completed && (
+                            <span style={{ marginLeft: '8px', fontSize: '12px', color: '#059669', fontWeight: '500' }}>✅ 완료</span>
+                          )}
+                        </h3>
+                      </div>
+
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                        <span>📅 {formatDateTime(schedule.datetime)}</span>
+                        <span>
+                          {schedule.location_type === 'offline' ? '📍' : '💻'}{' '}
+                          {schedule.location_type === 'offline' ? (schedule.location || '장소 미정') : (schedule.online_link || '링크 미정')}
+                        </span>
+                        <span>👥 {schedule.current_members}/{schedule.max_members}명</span>
+                      </div>
+
+                      {schedule.description && (
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
+                          {schedule.description}
+                        </p>
+                      )}
+
+                      {!schedule.is_completed && isApprovedMember && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                          {!isMySchedule ? (
+                            <button
+                              onClick={() => handleJoinSchedule(schedule.id, schedule.current_members)}
+                              disabled={isFull}
+                              style={{
+                                padding: '8px 16px',
+                                backgroundColor: isFull ? 'rgba(0,0,0,0.06)' : 'var(--button-primary)',
+                                color: isFull ? 'var(--text-muted)' : 'white',
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: isFull ? 'not-allowed' : 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                transition: 'background-color 0.2s',
+                              }}
+                            >
+                              {isFull ? '마감' : '참여하기'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleLeaveSchedule(schedule.id, schedule.current_members)}
+                              style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#EF4444',
+                                color: 'white',
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
+                            >
+                              참여 취소
+                            </button>
+                          )}
+                          {isScheduleCreator && (
+                            <button
+                              onClick={() => handleCompleteSchedule(schedule.id)}
+                              style={{
+                                padding: '8px 16px',
+                                backgroundColor: 'rgba(16,185,129,0.1)',
+                                color: '#059669',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(16,185,129,0.3)',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '500',
+                              }}
+                            >
+                              일정 종료
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {canEval && (
+                        <div style={{ marginTop: '8px' }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleOpenScheduleEval(schedule.id)}
+                            style={{
+                              padding: '8px 16px',
+                              backgroundColor: 'rgba(107,144,128,0.1)',
+                              color: 'var(--button-primary)',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(107,144,128,0.3)',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                            }}
+                          >
+                            ⭐ 평가하기
+                          </button>
+                        </div>
+                      )}
+                      {schedule.is_completed && scheduleEvalDone[schedule.id] && (
+                        <p style={{ fontSize: '12px', color: '#059669', marginTop: '8px' }}>✅ 평가 완료</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -978,8 +1393,8 @@ export default function GatheringDetailPage() {
         )}
       </div>
 
-      {/* 평가 모달 */}
-      {showEvalModal && (
+      {/* 일정 평가 모달 */}
+      {activeEvalScheduleId && (
         <div
           style={{
             position: 'fixed',
@@ -988,10 +1403,10 @@ export default function GatheringDetailPage() {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 50,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
             padding: '24px',
           }}
-          onClick={() => setShowEvalModal(false)}
+          onClick={() => setActiveEvalScheduleId(null)}
         >
           <div
             style={{
@@ -1008,128 +1423,124 @@ export default function GatheringDetailPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px', color: 'var(--text-primary)' }}>
-              멤버 평가
+              일정 멤버 평가
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
               함께한 멤버들을 평가해주세요. 평가는 익명으로 진행됩니다.
             </p>
 
-            {/* 멤버별 평가 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {getAllApprovedMemberIds().map(userId => {
-                const member = members.find(m => m.user_id === userId);
-                const isGatheringCreator = userId === gathering.creator_id;
-                const nickname = isGatheringCreator
-                  ? (creator?.nickname || '모임장')
-                  : (member?.profiles?.nickname || '멤버');
-                const hasExistingVotes = existingVotes[userId] && existingVotes[userId].size > 0;
-
-                return (
-                  <div key={userId} style={{
-                    padding: '16px',
-                    borderRadius: '14px',
-                    backgroundColor: hasExistingVotes ? 'rgba(16, 185, 129, 0.06)' : 'rgba(0,0,0,0.03)',
-                    border: hasExistingVotes ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(0,0,0,0.06)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                      <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
-                        {nickname}
-                      </span>
-                      {isGatheringCreator && (
-                        <span style={{
-                          fontSize: '11px',
-                          padding: '1px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: 'rgba(107, 144, 128, 0.2)',
-                          color: 'var(--button-primary)',
-                          fontWeight: '500',
-                        }}>
-                          모임장
-                        </span>
-                      )}
-                      {hasExistingVotes && (
-                        <span style={{
-                          fontSize: '11px',
-                          padding: '1px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                          color: '#059669',
-                          fontWeight: '500',
-                        }}>
-                          평가 완료
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {evalVoteTypes.map(vt => {
-                        const isSelected = evalVotes[userId]?.[vt.id];
-                        const isExisting = existingVotes[userId]?.has(vt.id);
-                        return (
+            {evalScheduleMembers.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 0' }}>평가할 멤버가 없습니다.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {evalScheduleMembers.map(member => {
+                  const direction = scheduleEvalVotes[member.user_id];
+                  return (
+                    <div key={member.user_id} style={{
+                      padding: '14px 16px',
+                      borderRadius: '14px',
+                      backgroundColor: direction === 'up' ? 'rgba(107,144,128,0.05)' : 'rgba(0,0,0,0.03)',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                            {member.profiles?.nickname || '멤버'}
+                          </span>
+                          {member.profiles?.custom_badge && (
+                            <span style={{
+                              padding: '1px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: '500',
+                              backgroundColor: 'rgba(107,144,128,0.15)', color: 'var(--button-primary)',
+                            }}>
+                              {member.profiles.custom_badge}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
                           <button
-                            key={vt.id}
-                            onClick={() => toggleEvalVote(userId, vt.id)}
-                            disabled={isExisting}
+                            onClick={() => {
+                              const newDir = direction === 'up' ? null : 'up';
+                              setScheduleEvalVotes(prev => ({ ...prev, [member.user_id]: newDir }));
+                              if (newDir === null) setScheduleEvalKeywords(prev => ({ ...prev, [member.user_id]: [] }));
+                            }}
                             style={{
-                              padding: '6px 12px',
-                              borderRadius: '20px',
-                              border: isSelected
-                                ? '2px solid var(--button-primary)'
-                                : '2px solid rgba(0,0,0,0.08)',
-                              backgroundColor: isSelected
-                                ? 'rgba(107, 144, 128, 0.15)'
-                                : 'rgba(255,255,255,0.6)',
-                              color: isSelected ? 'var(--button-primary)' : 'var(--text-secondary)',
-                              cursor: isExisting ? 'not-allowed' : 'pointer',
-                              fontSize: '13px',
-                              fontWeight: isSelected ? '600' : '400',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              transition: 'all 0.2s',
-                              opacity: isExisting ? 0.7 : 1,
+                              fontSize: '22px', background: 'none',
+                              border: direction === 'up' ? '2px solid var(--button-primary)' : '2px solid transparent',
+                              borderRadius: '8px', cursor: 'pointer', padding: '4px 8px',
+                              opacity: direction === 'down' ? 0.35 : 1, transition: 'all 0.15s',
                             }}
                           >
-                            {vt.emoji}{vt.label}
+                            👍
                           </button>
-                        );
-                      })}
+                          <button
+                            onClick={() => {
+                              const newDir = direction === 'down' ? null : 'down';
+                              setScheduleEvalVotes(prev => ({ ...prev, [member.user_id]: newDir }));
+                              setScheduleEvalKeywords(prev => ({ ...prev, [member.user_id]: [] }));
+                            }}
+                            style={{
+                              fontSize: '22px', background: 'none',
+                              border: direction === 'down' ? '2px solid #EF4444' : '2px solid transparent',
+                              borderRadius: '8px', cursor: 'pointer', padding: '4px 8px',
+                              opacity: direction === 'up' ? 0.35 : 1, transition: 'all 0.15s',
+                            }}
+                          >
+                            👎
+                          </button>
+                        </div>
+                      </div>
+                      {direction === 'up' && (
+                        <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {evalKeywordTypes.map(kw => {
+                            const isKwSelected = (scheduleEvalKeywords[member.user_id] || []).includes(kw.id);
+                            return (
+                              <button
+                                key={kw.id}
+                                onClick={() => toggleScheduleEvalKeyword(member.user_id, kw.id)}
+                                style={{
+                                  padding: '5px 12px', borderRadius: '20px',
+                                  border: isKwSelected ? '2px solid var(--button-primary)' : '2px solid rgba(0,0,0,0.1)',
+                                  backgroundColor: isKwSelected ? 'rgba(107,144,128,0.15)' : 'rgba(255,255,255,0.7)',
+                                  color: isKwSelected ? 'var(--button-primary)' : 'var(--text-secondary)',
+                                  cursor: 'pointer', fontSize: '12px',
+                                  fontWeight: isKwSelected ? '600' : '400',
+                                  transition: 'all 0.15s', fontFamily: 'inherit',
+                                }}
+                              >
+                                {kw.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* 하단 버튼 */}
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <button
-                onClick={handleSubmitEval}
-                disabled={evalSubmitting}
+                onClick={handleSubmitScheduleEval}
+                disabled={scheduleEvalSubmitting}
                 style={{
-                  flex: 1,
-                  padding: '14px 0',
-                  backgroundColor: evalSubmitting ? 'rgba(0,0,0,0.06)' : 'var(--button-primary)',
-                  color: evalSubmitting ? 'var(--text-muted)' : 'white',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: evalSubmitting ? 'not-allowed' : 'pointer',
-                  fontSize: '15px',
+                  flex: 1, padding: '14px 0',
+                  backgroundColor: scheduleEvalSubmitting ? 'rgba(0,0,0,0.06)' : 'var(--button-primary)',
+                  color: scheduleEvalSubmitting ? 'var(--text-muted)' : 'white',
+                  borderRadius: '12px', fontWeight: '600', border: 'none',
+                  cursor: scheduleEvalSubmitting ? 'not-allowed' : 'pointer', fontSize: '15px',
                 }}
               >
-                {evalSubmitting ? '제출 중...' : '평가 완료'}
+                {scheduleEvalSubmitting ? '제출 중...' : '평가 완료'}
               </button>
               <button
-                onClick={() => setShowEvalModal(false)}
+                onClick={() => setActiveEvalScheduleId(null)}
                 style={{
-                  flex: 1,
-                  padding: '14px 0',
+                  flex: 1, padding: '14px 0',
                   backgroundColor: 'rgba(0,0,0,0.06)',
                   color: 'var(--text-secondary)',
-                  borderRadius: '12px',
-                  fontWeight: '500',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '15px',
+                  borderRadius: '12px', fontWeight: '500', border: 'none',
+                  cursor: 'pointer', fontSize: '15px',
                 }}
               >
                 건너뛰기
@@ -1138,7 +1549,6 @@ export default function GatheringDetailPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

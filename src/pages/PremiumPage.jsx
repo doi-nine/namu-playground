@@ -48,6 +48,7 @@ export default function PremiumPage() {
         { icon: '✍️', title: 'AI 글쓰기 보조 (모임/프로필)', desc: '월 3회' },
         { icon: '⭐', title: '인기도 조회', desc: '불가' },
         { icon: '🎨', title: '프로필 꾸미기', desc: '불가' },
+        { icon: '👥', title: '일정 모집인원', desc: '최대 20명' },
     ];
 
     const premiumFeatures = [
@@ -55,6 +56,7 @@ export default function PremiumPage() {
         { icon: '⭐', title: '인기도 조회 무제한', desc: '멤버들의 인기도를 자유롭게 확인하세요' },
         { icon: '🎨', title: '프로필 꾸미기', desc: '테마, 배지로 나만의 프로필을 꾸며보세요' },
         { icon: '📌', title: '모임 글 상단 노출', desc: '모임 리스트에서 내 모임이 먼저 보여요' },
+        { icon: '👥', title: '일정 모집인원 확대', desc: '일정당 최대 100명까지 모집할 수 있어요' },
     ];
 
     return (
@@ -103,73 +105,19 @@ export default function PremiumPage() {
                 </p>
             </div>
 
-            {/* 무료 사용자 */}
-            <div className="glass" style={{
-                borderRadius: '16px',
-                overflow: 'hidden',
-                marginBottom: '16px'
-            }}>
-                <div style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid rgba(0,0,0,0.06)',
-                    backgroundColor: 'rgba(0,0,0,0.02)'
-                }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-secondary)', margin: 0 }}>
-                        무료 사용자
-                    </h3>
-                </div>
-                {freeFeatures.map((feature, index) => (
-                    <div
-                        key={index}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '14px',
-                            padding: '14px 20px',
-                            borderBottom: index < freeFeatures.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
-                        }}
-                    >
-                        <div style={{
-                            fontSize: '20px',
-                            flexShrink: 0,
-                            width: '36px',
-                            height: '36px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '10px',
-                            backgroundColor: 'rgba(0,0,0,0.04)',
-                        }}>
-                            {feature.icon}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>
-                                {feature.title}
-                            </span>
-                        </div>
-                        <span style={{
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            color: feature.desc === '불가' ? 'var(--danger)' : 'var(--text-muted)',
-                        }}>
-                            {feature.desc}
-                        </span>
-                    </div>
-                ))}
-            </div>
-
             {/* 프리미엄 기능 */}
             <div style={{
                 borderRadius: '16px',
                 overflow: 'hidden',
-                marginBottom: '24px',
-                border: '2px solid rgba(107, 144, 128, 0.3)',
-                backgroundColor: 'rgba(107, 144, 128, 0.04)',
+                marginBottom: '16px',
+                border: '2.5px solid rgba(107, 144, 128, 0.7)',
+                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                boxShadow: '0 4px 20px rgba(107, 144, 128, 0.18)',
             }}>
                 <div style={{
                     padding: '16px 20px',
-                    borderBottom: '1px solid rgba(107, 144, 128, 0.15)',
-                    backgroundColor: 'rgba(107, 144, 128, 0.08)',
+                    borderBottom: '1px solid rgba(107, 144, 128, 0.25)',
+                    backgroundColor: 'rgba(107, 144, 128, 0.18)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
@@ -230,6 +178,62 @@ export default function PremiumPage() {
                                 {feature.desc}
                             </p>
                         </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* 무료 사용자 */}
+            <div className="glass" style={{
+                borderRadius: '16px',
+                overflow: 'hidden',
+                marginBottom: '24px',
+                opacity: 0.8,
+            }}>
+                <div style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid rgba(0,0,0,0.06)',
+                    backgroundColor: 'rgba(0,0,0,0.02)'
+                }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-secondary)', margin: 0 }}>
+                        무료 사용자
+                    </h3>
+                </div>
+                {freeFeatures.map((feature, index) => (
+                    <div
+                        key={index}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            padding: '14px 20px',
+                            borderBottom: index < freeFeatures.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                        }}
+                    >
+                        <div style={{
+                            fontSize: '20px',
+                            flexShrink: 0,
+                            width: '36px',
+                            height: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '10px',
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                        }}>
+                            {feature.icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>
+                                {feature.title}
+                            </span>
+                        </div>
+                        <span style={{
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: feature.desc === '불가' ? 'var(--danger)' : 'var(--text-muted)',
+                        }}>
+                            {feature.desc}
+                        </span>
                     </div>
                 ))}
             </div>

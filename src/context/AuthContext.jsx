@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
       (_event, session) => {
         setUser(session?.user ?? null)
         if (session?.user) {
+          setLoading(true)
           fetchProfile(session.user.id)
         } else {
           setProfile(null)
@@ -74,6 +75,9 @@ export function AuthProvider({ children }) {
   const signIn = (email, password) =>
     supabase.auth.signInWithPassword({ email, password })
 
+  const signInWithGoogle = () =>
+    supabase.auth.signInWithOAuth({ provider: 'google' })
+
   const signOut = () => supabase.auth.signOut()
 
   // ✅ 프로필 새로고침 함수 추가
@@ -99,9 +103,10 @@ export function AuthProvider({ children }) {
       profile,
       loading,
       refreshProfile,
-      signIn,      // ← 추가
-      signUp,      // ← 추가
-      signOut      // ← 추가
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signOut
     }}>
       {children}
     </AuthContext.Provider>

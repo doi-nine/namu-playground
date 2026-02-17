@@ -64,7 +64,7 @@ export default function MemberManagePage() {
     try {
       const { data, error } = await supabase
         .from('gathering_members')
-        .select('*, profiles:user_id (nickname, is_premium)')
+        .select('*, profiles:user_id (nickname, is_premium, custom_badge)')
         .eq('gathering_id', id)
         .eq('status', 'approved');
 
@@ -79,7 +79,7 @@ export default function MemberManagePage() {
     try {
       const { data, error } = await supabase
         .from('gathering_members')
-        .select('*, profiles (nickname, age_range, interests, bio)')
+        .select('*, profiles:user_id (nickname, age_range, location, favorite_game_categories, bio, is_premium, custom_badge)')
         .eq('gathering_id', id)
         .eq('status', 'pending');
 
@@ -215,19 +215,21 @@ export default function MemberManagePage() {
         <button
           onClick={() => navigate(`/gatherings/${id}`)}
           style={{
-            padding: '6px',
-            backgroundColor: 'transparent',
+            background: 'none',
             border: 'none',
-            borderRadius: '8px',
             cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: '8px',
+            fontSize: '20px',
+            color: 'var(--button-primary)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            transition: 'background-color 0.2s',
           }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          ‹
         </button>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--button-primary)', margin: 0 }}>
           멤버 관리
@@ -277,12 +279,6 @@ export default function MemberManagePage() {
                 borderRadius: '12px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '14px' }}>
-                    {member.profiles?.nickname || '알 수 없음'}
-                  </span>
-                  {member.profiles?.is_premium && (
-                    <span style={{ fontSize: '12px' }}>👑</span>
-                  )}
                   {isGatheringCreator && (
                     <span style={{
                       fontSize: '11px',
@@ -294,6 +290,24 @@ export default function MemberManagePage() {
                     }}>
                       모임장
                     </span>
+                  )}
+                  <span style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '14px' }}>
+                    {member.profiles?.nickname || '알 수 없음'}
+                  </span>
+                  {member.profiles?.custom_badge && (
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500',
+                      backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                      color: 'var(--button-primary)',
+                    }}>
+                      {member.profiles.custom_badge}
+                    </span>
+                  )}
+                  {member.profiles?.is_premium && (
+                    <span style={{ fontSize: '12px' }}>👑</span>
                   )}
                 </div>
                 {!isGatheringCreator && (
@@ -332,25 +346,58 @@ export default function MemberManagePage() {
                 padding: '16px',
                 backgroundColor: 'rgba(255,255,255,0.75)',
                 borderRadius: '14px',
-                border: '1px solid rgba(0,0,0,0.06)'
+                border: '1px solid rgba(0,0,0,0.06)',
+                overflow: 'hidden',
               }}
             >
               <div style={{ marginBottom: '12px' }}>
-                <p style={{ fontWeight: 'bold', marginBottom: '4px', color: 'var(--text-primary)' }}>
-                  {applicant.profiles?.nickname || '익명'}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <p style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+                    {applicant.profiles?.nickname || '익명'}
+                  </p>
+                  {applicant.profiles?.custom_badge && (
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500',
+                      backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                      color: 'var(--button-primary)',
+                    }}>
+                      {applicant.profiles.custom_badge}
+                    </span>
+                  )}
+                  {applicant.profiles?.is_premium && (
+                    <span style={{ fontSize: '12px' }}>👑</span>
+                  )}
+                </div>
                 {applicant.profiles?.age_range && (
                   <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
                     나이대: {applicant.profiles.age_range}
                   </p>
                 )}
-                {applicant.profiles?.interests && (
+                {applicant.profiles?.location && (
                   <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                    관심사: {applicant.profiles.interests}
+                    지역: {applicant.profiles.location}
                   </p>
                 )}
+                {applicant.profiles?.favorite_game_categories?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+                    {applicant.profiles.favorite_game_categories.map((cat, i) => (
+                      <span key={i} style={{
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        backgroundColor: 'rgba(107, 144, 128, 0.1)',
+                        color: 'var(--button-primary)',
+                      }}>
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {applicant.profiles?.bio && (
-                  <p style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '8px' }}>
+                  <p style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '8px', wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap', margin: '8px 0 0 0' }}>
                     {applicant.profiles.bio}
                   </p>
                 )}

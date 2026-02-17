@@ -1,12 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
+    const { profile, refreshProfile } = useAuth();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const isAtBottom = useRef(true);
+
+    const [summaryLoading, setSummaryLoading] = useState(false);
+    const [showSummaryModal, setShowSummaryModal] = useState(false);
+    const [summaryText, setSummaryText] = useState('');
+    const [summaryRemaining, setSummaryRemaining] = useState(null);
 
     const canChat = memberStatus === 'approved' || isCreator;
 
@@ -30,7 +39,9 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
     }, [gatheringId]);
 
     useEffect(() => {
-        scrollToBottom();
+        if (isAtBottom.current) {
+            scrollToBottom();
+        }
     }, [messages]);
 
     const fetchUser = async () => {
@@ -44,13 +55,22 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                 .from('messages')
                 .select(`
           *,
-          profiles (nickname)
+          profiles (nickname, custom_badge, is_premium)
         `)
                 .eq('gathering_id', gatheringId)
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
-            setMessages(data || []);
+            const newMessages = data || [];
+            setMessages(prev => {
+                // 메시지가 실제로 변경된 경우에만 상태 업데이트 (불필요한 re-render 방지)
+                if (prev.length === newMessages.length &&
+                    prev.length > 0 &&
+                    prev[prev.length - 1].id === newMessages[newMessages.length - 1]?.id) {
+                    return prev;
+                }
+                return newMessages;
+            });
         } catch (error) {
             console.error('메시지 로딩 실패:', error);
         } finally {
@@ -71,19 +91,81 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                 })
                 .select(`
           *,
-          profiles (nickname)
+          profiles (nickname, custom_badge, is_premium)
         `)
                 .single();
 
             if (error) throw error;
 
-            // 전송 성공하면 바로 메시지 목록에 추가
+            // 전송 성공하면 바로 메시지 목록에 추가 (항상 하단으로 이동)
+            isAtBottom.current = true;
             setMessages(prev => [...prev, data]);
             setNewMessage('');
         } catch (error) {
             console.error('메시지 전송 실패:', error);
             alert('메시지 전송에 실패했습니다.');
         }
+    };
+
+    const handleSummarize = async () => {
+        if (messages.length === 0) {
+            alert('요약할 메시지가 없습니다.');
+            return;
+        }
+
+        // 무료 유저 횟수 체크 (프론트 사전 검증)
+        if (!profile?.is_premium) {
+            const left = profile?.ai_chat_summary_left ?? 3;
+            if (left <= 0) {
+                alert('이번 달 무료 채팅 요약 횟수를 모두 사용했습니다. 프리미엄으로 업그레이드하면 무제한으로 이용할 수 있어요!');
+                return;
+            }
+        }
+
+        setSummaryLoading(true);
+        try {
+            const formatted = messages.map(msg => ({
+                nickname: msg.profiles?.nickname || '알 수 없음',
+                content: msg.content,
+                time: new Date(msg.created_at).toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            }));
+
+            const { data, error } = await supabase.functions.invoke('ai-chat-summary', {
+                body: { gathering_id: gatheringId, messages: formatted }
+            });
+
+            if (error) throw error;
+            if (data?.error) {
+                alert(data.error);
+                return;
+            }
+
+            setSummaryText(data.summary);
+            if (data.remaining !== null && data.remaining !== undefined) {
+                setSummaryRemaining(data.remaining);
+            }
+            setShowSummaryModal(true);
+
+            // 프로필 새로고침 (잔여 횟수 동기화)
+            if (!profile?.is_premium) {
+                refreshProfile();
+            }
+        } catch (err) {
+            console.error('채팅 요약 오류:', err);
+            alert('채팅 요약 중 오류가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
+        } finally {
+            setSummaryLoading(false);
+        }
+    };
+
+    const handleScroll = () => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        const threshold = 80;
+        isAtBottom.current = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
     };
 
     const scrollToBottom = () => {
@@ -116,6 +198,9 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
         );
     }
 
+    const summaryLeft = profile?.ai_chat_summary_left ?? 3;
+    const isPremium = profile?.is_premium;
+
     return (
         <div style={{
             display: 'flex',
@@ -124,13 +209,18 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
             minHeight: '500px'
         }}>
             {/* 메시지 리스트 */}
-            <div className="glass" style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: '16px',
-                borderRadius: '14px',
-                marginBottom: '16px'
-            }}>
+            <div
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className="glass"
+                style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '16px',
+                    borderRadius: '14px',
+                    marginBottom: '16px'
+                }}
+            >
                 {messages.length === 0 ? (
                     <div style={{
                         textAlign: 'center',
@@ -153,18 +243,32 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                                     marginBottom: '12px'
                                 }}
                             >
-                                {/* 닉네임 (내 메시지가 아닐 때만) */}
-                                {!isMyMessage && (
-                                    <span style={{
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        color: 'var(--button-primary)',
-                                        marginBottom: '4px',
-                                        marginLeft: '4px'
-                                    }}>
-                                        {msg.profiles?.nickname || '알 수 없음'}
-                                    </span>
-                                )}
+                                {/* 닉네임 */}
+                                <span style={{
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    color: 'var(--button-primary)',
+                                    marginBottom: '4px',
+                                    marginLeft: isMyMessage ? undefined : '4px',
+                                    marginRight: isMyMessage ? '4px' : undefined,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                }}>
+                                    {msg.profiles?.nickname || '알 수 없음'}
+                                    {msg.profiles?.custom_badge && (
+                                        <span style={{
+                                            padding: '1px 6px',
+                                            borderRadius: '4px',
+                                            fontSize: '11px',
+                                            fontWeight: '500',
+                                            backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                                            color: 'var(--button-primary)',
+                                        }}>
+                                            {msg.profiles.custom_badge}
+                                        </span>
+                                    )}
+                                </span>
 
                                 <div style={{
                                     display: 'flex',
@@ -253,7 +357,175 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                 >
                     전송
                 </button>
+                <button
+                    onClick={handleSummarize}
+                    disabled={summaryLoading || messages.length === 0}
+                    title={isPremium ? 'AI 대화 요약' : `AI 대화 요약 (잔여 ${summaryLeft}회)`}
+                    style={{
+                        padding: '12px 16px',
+                        background: '#FFFFFF',
+                        color: summaryLoading || messages.length === 0 ? 'var(--text-muted)' : 'var(--button-primary)',
+                        border: summaryLoading || messages.length === 0 ? '1.5px solid rgba(0,0,0,0.12)' : '1.5px solid var(--button-primary)',
+                        borderRadius: '10px',
+                        fontWeight: '600',
+                        cursor: summaryLoading || messages.length === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap',
+                        position: 'relative',
+                    }}
+                >
+                    {summaryLoading ? (
+                        <>
+                            <div style={{
+                                width: '14px', height: '14px',
+                                border: '2px solid rgba(107,144,128,0.2)',
+                                borderTop: '2px solid var(--button-primary)',
+                                borderRadius: '50%',
+                                animation: 'spin 0.8s linear infinite'
+                            }} />
+                            요약 중
+                        </>
+                    ) : (
+                        <>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                            </svg>
+                            요약
+                        </>
+                    )}
+                    {/* 무료 유저 잔여 횟수 배지 */}
+                    {!isPremium && !summaryLoading && (
+                        <span style={{
+                            position: 'absolute',
+                            top: '-6px',
+                            right: '-6px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: summaryLeft > 0 ? 'var(--button-primary)' : 'var(--danger)',
+                            color: '#FFFFFF',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '2px solid white',
+                        }}>
+                            {summaryLeft}
+                        </span>
+                    )}
+                </button>
             </div>
+
+            {/* 요약 모달 */}
+            {showSummaryModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 50,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        padding: '24px',
+                    }}
+                    onClick={() => setShowSummaryModal(false)}
+                >
+                    <div
+                        style={{
+                            backgroundColor: 'var(--card-bg, #fff)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            width: '100%',
+                            maxWidth: '500px',
+                            borderRadius: '20px',
+                            padding: '28px',
+                            maxHeight: '80vh',
+                            overflowY: 'auto',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                            <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
+                                background: 'linear-gradient(135deg, #8B5CF6, #6366F1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                            }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+                                    AI 대화 요약
+                                </h3>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                                    {messages.length}개 메시지 분석 완료
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            padding: '16px',
+                            backgroundColor: 'rgba(139, 92, 246, 0.06)',
+                            borderRadius: '14px',
+                            border: '1px solid rgba(139, 92, 246, 0.12)',
+                            marginBottom: '16px',
+                        }}>
+                            <p style={{
+                                fontSize: '14px',
+                                color: 'var(--text-primary)',
+                                lineHeight: '1.8',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                                margin: 0,
+                            }}>
+                                {summaryText}
+                            </p>
+                        </div>
+
+                        {summaryRemaining !== null && summaryRemaining !== undefined && (
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '12px' }}>
+                                이번 달 남은 무료 요약 횟수: {summaryRemaining}회
+                            </p>
+                        )}
+
+                        <button
+                            onClick={() => setShowSummaryModal(false)}
+                            style={{
+                                width: '100%',
+                                padding: '14px',
+                                backgroundColor: 'var(--button-primary)',
+                                color: '#FFFFFF',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '15px',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

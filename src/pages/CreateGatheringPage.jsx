@@ -13,11 +13,6 @@ export default function CreateGatheringPage() {
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [locationType, setLocationType] = useState('offline');
-    const [offlineLocation, setOfflineLocation] = useState('');
-    const [onlineLink, setOnlineLink] = useState('');
-    const [dateTime, setDateTime] = useState('');
-    const [maxMembers, setMaxMembers] = useState(10);
     const [tags, setTags] = useState([]);
     const [approvalRequired, setApprovalRequired] = useState(false);
     const [aiInput, setAiInput] = useState('');
@@ -30,7 +25,6 @@ export default function CreateGatheringPage() {
 
     const isPremium = profile?.is_premium;
     const maxTagCount = isPremium ? 6 : 3;
-    const maxMemberLimit = isPremium ? 100 : 20;
 
     const handleAIGenerate = async () => {
         if (!aiInput.trim()) {
@@ -92,16 +86,7 @@ export default function CreateGatheringPage() {
     const validateForm = () => {
         if (tags.length === 0) return '최소 1개의 태그를 입력해주세요.';
         if (!title.trim()) return '제목을 입력해주세요.';
-        if (!dateTime) return '날짜와 시간을 선택해주세요.';
-        if (locationType === 'offline' && !offlineLocation.trim()) {
-            return '오프라인 장소를 입력해주세요.';
-        }
-        if (locationType === 'online' && !onlineLink.trim()) {
-            return '온라인 링크를 입력해주세요.';
-        }
-        if (maxMembers < 2 || maxMembers > maxMemberLimit) {
-            return `최대 인원은 2~${maxMemberLimit}명 사이로 설정해주세요.`;
-        }
+        if (!description.trim()) return '설명을 입력해주세요.';
         return null;
     };
 
@@ -122,7 +107,6 @@ export default function CreateGatheringPage() {
         setIsSubmitting(true);
 
         try {
-            const datetimeISO = new Date(dateTime).toISOString();
             const processedTags = tags.map(tag => tag.replace(/^#/, '').trim()).filter(t => t);
 
             const { data: gatheringData, error: gatheringError } = await supabase
@@ -131,11 +115,6 @@ export default function CreateGatheringPage() {
                     {
                         title: title,
                         description: description,
-                        datetime: datetimeISO,
-                        location_type: locationType,
-                        location: locationType === 'offline' ? offlineLocation : null,
-                        online_link: locationType === 'online' ? onlineLink : null,
-                        max_members: parseInt(maxMembers),
                         current_members: 1,
                         approval_required: approvalRequired,
                         creator_id: user.id,
@@ -204,6 +183,7 @@ export default function CreateGatheringPage() {
         backgroundColor: isActive ? 'var(--button-primary)' : 'transparent',
         color: isActive ? '#FFFFFF' : 'var(--text-muted)',
         fontSize: '14px',
+        position: 'relative',
     });
 
     const segmentBtnStyle = (isActive) => ({
@@ -305,78 +285,6 @@ export default function CreateGatheringPage() {
         </div>
     );
 
-    const renderLocationFields = (prefix) => (
-        <>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                <button onClick={() => setLocationType('offline')} style={segmentBtnStyle(locationType === 'offline')}>오프라인</button>
-                <button onClick={() => setLocationType('online')} style={segmentBtnStyle(locationType === 'online')}>온라인</button>
-            </div>
-            {locationType === 'offline' && (
-                <input
-                    type="text"
-                    placeholder="예) 강남역 스타벅스"
-                    value={offlineLocation}
-                    onChange={(e) => setOfflineLocation(e.target.value)}
-                    style={inputStyle(`${prefix}offlineLocation`)}
-                    onFocus={() => setFocusedInput(`${prefix}offlineLocation`)}
-                    onBlur={() => setFocusedInput(null)}
-                />
-            )}
-            {locationType === 'online' && (
-                <input
-                    type="url"
-                    placeholder="예) https://discord.gg/..."
-                    value={onlineLink}
-                    onChange={(e) => setOnlineLink(e.target.value)}
-                    style={inputStyle(`${prefix}onlineLink`)}
-                    onFocus={() => setFocusedInput(`${prefix}onlineLink`)}
-                    onBlur={() => setFocusedInput(null)}
-                />
-            )}
-        </>
-    );
-
-    const renderDetailFields = (prefix) => (
-        <>
-            <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>날짜 및 시간 *</label>
-                <input
-                    type="datetime-local"
-                    value={dateTime}
-                    onChange={(e) => setDateTime(e.target.value)}
-                    style={inputStyle(`${prefix}dateTime`)}
-                    onFocus={() => setFocusedInput(`${prefix}dateTime`)}
-                    onBlur={() => setFocusedInput(null)}
-                />
-            </div>
-            <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>최대 인원: {maxMembers}명</label>
-                <input
-                    type="range"
-                    min="2"
-                    max={maxMemberLimit}
-                    value={maxMembers}
-                    onChange={(e) => setMaxMembers(Number(e.target.value))}
-                    style={{ width: '100%', height: '8px', borderRadius: '8px', appearance: 'none', cursor: 'pointer', accentColor: 'var(--button-primary)' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>2명</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{maxMemberLimit}명</span>
-                </div>
-            </div>
-            <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>참가 방식</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => setApprovalRequired(false)} style={segmentBtnStyle(!approvalRequired)}>자유 참가</button>
-                    <button onClick={() => setApprovalRequired(true)} style={segmentBtnStyle(approvalRequired)}>승인제</button>
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                    {approvalRequired ? '참가 신청 시 내가 확인 후 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
-                </p>
-            </div>
-        </>
-    );
-
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px', paddingBottom: '100px' }}>
             {/* 페이지 타이틀 */}
@@ -398,18 +306,35 @@ export default function CreateGatheringPage() {
                 borderRadius: '14px',
             }}>
                 <button onClick={() => setMode('toggle')} style={toggleBtnStyle(mode === 'toggle')}>직접 만들기</button>
-                <button onClick={() => setMode('ai')} style={toggleBtnStyle(mode === 'ai')}>AI로 만들기</button>
+                <button onClick={() => setMode('ai')} style={toggleBtnStyle(mode === 'ai')}>
+                    AI로 만들기
+                    {!isPremium && (
+                        <span style={{
+                            position: 'absolute',
+                            top: '-7px',
+                            right: '-7px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: '#5a8a72',
+                            color: '#FFFFFF',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '2px solid white',
+                            lineHeight: 1,
+                        }}>
+                            {profile?.ai_recommendations_left ?? 3}
+                        </span>
+                    )}
+                </button>
             </div>
 
             {/* ─── 직접 만들기 모드 ─── */}
             {mode === 'toggle' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* 장소 타입 */}
-                    <div className="glass-strong" style={{ borderRadius: '16px', padding: '24px' }}>
-                        <h2 style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)', marginBottom: '12px' }}>장소 타입 *</h2>
-                        {renderLocationFields('')}
-                    </div>
-
                     {/* 제목 & 설명 */}
                     <div className="glass-strong" style={{ borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div>
@@ -425,7 +350,7 @@ export default function CreateGatheringPage() {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontWeight: '600', fontSize: '15px', marginBottom: '8px', color: 'var(--text-primary)' }}>설명 (선택)</label>
+                            <label style={{ display: 'block', fontWeight: '600', fontSize: '15px', marginBottom: '8px', color: 'var(--text-primary)' }}>설명 *</label>
                             <textarea
                                 placeholder="모임에 대해 자세히 설명해주세요"
                                 value={description}
@@ -442,7 +367,16 @@ export default function CreateGatheringPage() {
                     <div className="glass-strong" style={{ borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <h2 style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)' }}>세부 설정</h2>
                         {renderTagInput('')}
-                        {renderDetailFields('')}
+                        <div>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>참가 방식</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => setApprovalRequired(false)} style={segmentBtnStyle(!approvalRequired)}>자유 참가</button>
+                                <button onClick={() => setApprovalRequired(true)} style={segmentBtnStyle(approvalRequired)}>승인제</button>
+                            </div>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                {approvalRequired ? '참가 신청 시 내가 확인 후 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
@@ -454,7 +388,7 @@ export default function CreateGatheringPage() {
                     <div className="glass-strong" style={{ borderRadius: '16px', padding: '24px' }}>
                         <h2 style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)', marginBottom: '12px' }}>어떤 모임을 만들고 싶으신가요?</h2>
                         <textarea
-                            placeholder="예) 주말에 강남에서 보드게임 하면서 놀 사람 구해요. 초보자도 환영하고, 20대~30대 위주로 모이면 좋겠어요."
+                            placeholder="예) 주말 보드게임 모임. 초보환영. 2030대만."
                             value={aiInput}
                             onChange={(e) => setAiInput(e.target.value)}
                             rows={5}
@@ -468,18 +402,18 @@ export default function CreateGatheringPage() {
                             style={{
                                 marginTop: '16px',
                                 width: '100%',
-                                backgroundColor: isGenerating ? 'rgba(0,0,0,0.12)' : 'var(--button-primary)',
-                                color: '#FFFFFF',
+                                backgroundColor: isGenerating ? 'rgba(0,0,0,0.04)' : '#FFFFFF',
+                                color: isGenerating ? 'var(--text-muted)' : 'var(--button-primary)',
                                 padding: '14px 0',
                                 borderRadius: '12px',
                                 fontWeight: '600',
-                                border: 'none',
+                                border: isGenerating ? '1.5px solid rgba(0,0,0,0.1)' : '1.5px solid var(--button-primary)',
                                 cursor: isGenerating ? 'not-allowed' : 'pointer',
-                                transition: 'background-color 0.2s',
+                                transition: 'all 0.2s',
                                 fontSize: '15px',
                             }}
-                            onMouseEnter={(e) => { if (!isGenerating) e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'; }}
-                            onMouseLeave={(e) => { if (!isGenerating) e.currentTarget.style.backgroundColor = 'var(--button-primary)'; }}
+                            onMouseEnter={(e) => { if (!isGenerating) e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.06)'; }}
+                            onMouseLeave={(e) => { if (!isGenerating) e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
                         >
                             {isGenerating ? '생성 중...' : 'AI로 글 만들기'}
                         </button>
@@ -503,7 +437,7 @@ export default function CreateGatheringPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>설명</label>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>설명 *</label>
                                     <textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
@@ -517,12 +451,14 @@ export default function CreateGatheringPage() {
 
                             {/* 추가 정보 입력 */}
                             <div className="glass-strong" style={{ borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <h2 style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)' }}>추가 정보 입력</h2>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-primary)' }}>장소 타입 *</label>
-                                    {renderLocationFields('ai')}
+                                <h2 style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)' }}>참가 방식</h2>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button onClick={() => setApprovalRequired(false)} style={segmentBtnStyle(!approvalRequired)}>자유 참가</button>
+                                    <button onClick={() => setApprovalRequired(true)} style={segmentBtnStyle(approvalRequired)}>승인제</button>
                                 </div>
-                                {renderDetailFields('ai')}
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                    {approvalRequired ? '참가 신청 시 내가 확인 후 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
+                                </p>
                             </div>
                         </>
                     )}

@@ -148,6 +148,11 @@ export default function BillSplitCalculator({ gatheringId, isHost, approvedMembe
         return member?.profiles?.nickname || '알 수 없음';
     };
 
+    const getMemberBadge = (userId) => {
+        const member = approvedMembers.find(m => m.user_id === userId);
+        return member?.profiles?.custom_badge || null;
+    };
+
     const paidCount = checks.filter(c => c.is_paid).length;
     const totalCount = checks.length;
 
@@ -343,8 +348,20 @@ export default function BillSplitCalculator({ gatheringId, isHost, approvedMembe
                                     {check.is_paid ? '✓' : memberName[0]}
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>
+                                    <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                                         {memberName}
+                                        {getMemberBadge(check.user_id) && (
+                                            <span style={{
+                                                padding: '1px 6px',
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontWeight: '500',
+                                                backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                                                color: 'var(--button-primary)',
+                                            }}>
+                                                {getMemberBadge(check.user_id)}
+                                            </span>
+                                        )}
                                         {isCurrentUser && (
                                             <span style={{
                                                 marginLeft: '8px',
