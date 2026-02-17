@@ -76,7 +76,12 @@ export function AuthProvider({ children }) {
     supabase.auth.signInWithPassword({ email, password })
 
   const signInWithGoogle = () =>
-    supabase.auth.signInWithOAuth({ provider: 'google' })
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/gatherings`,
+      },
+    })
 
   const signOut = () => supabase.auth.signOut()
 
