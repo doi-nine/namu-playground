@@ -76,7 +76,7 @@ export default function ProfileEditPage() {
       return;
     }
 
-    if (!authProfile?.is_premium && (authProfile?.ai_recommendations_left ?? 3) <= 0) {
+    if (!authProfile?.is_premium && (authProfile?.ai_writing_left ?? 3) <= 0) {
       setShowPremiumModal(true);
       return;
     }
@@ -100,7 +100,7 @@ export default function ProfileEditPage() {
       if (!authProfile?.is_premium) {
         await supabase
           .from('profiles')
-          .update({ ai_recommendations_left: Math.max(0, (authProfile?.ai_recommendations_left ?? 3) - 1) })
+          .update({ ai_writing_left: Math.max(0, (authProfile?.ai_writing_left ?? 3) - 1) })
           .eq('id', user.id);
         await refreshProfile();
       }
@@ -244,7 +244,7 @@ export default function ProfileEditPage() {
               border: '2px solid white',
               lineHeight: 1,
             }}>
-              {authProfile?.ai_recommendations_left ?? 3}
+              {authProfile?.ai_writing_left ?? 3}
             </span>
           )}
         </button>

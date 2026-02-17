@@ -32,7 +32,7 @@ export default function CreateGatheringPage() {
             return;
         }
 
-        if (!profile?.is_premium && profile?.ai_recommendations_left <= 0) {
+        if (!profile?.is_premium && profile?.ai_writing_left <= 0) {
             setShowPremiumModal(true);
             return;
         }
@@ -54,7 +54,7 @@ export default function CreateGatheringPage() {
                 const { error: updateError } = await supabase
                     .from('profiles')
                     .update({
-                        ai_recommendations_left: Math.max(0, (profile?.ai_recommendations_left || 0) - 1)
+                        ai_writing_left: Math.max(0, (profile?.ai_writing_left || 0) - 1)
                     })
                     .eq('id', user.id);
 
@@ -326,7 +326,7 @@ export default function CreateGatheringPage() {
                             border: '2px solid white',
                             lineHeight: 1,
                         }}>
-                            {profile?.ai_recommendations_left ?? 3}
+                            {profile?.ai_writing_left ?? 3}
                         </span>
                     )}
                 </button>
