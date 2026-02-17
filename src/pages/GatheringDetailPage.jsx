@@ -681,6 +681,7 @@ export default function GatheringDetailPage() {
             borderBottom: '2px solid rgba(0,0,0,0.06)',
             marginBottom: '24px',
             display: 'flex',
+            flexWrap: 'nowrap',
             gap: '4px',
           }}
         >

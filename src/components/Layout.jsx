@@ -115,64 +115,8 @@ export default function Layout({ children }) {
     return (
       <div style={{
         minHeight: '100vh',
-        paddingBottom: '140px'
+        paddingBottom: '80px'
       }}>
-        {/* 모바일 헤더 */}
-        <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 30,
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'rgba(168, 184, 165, 0.9)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-        }}>
-          <span style={{
-            fontSize: '18px',
-            fontWeight: '700',
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em'
-          }}>
-            나무 놀이터
-          </span>
-          <button
-            onClick={() => navigate('/notifications')}
-            style={{
-              position: 'relative',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Bell size={22} color="var(--text-primary)" />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '4px',
-                right: '4px',
-                backgroundColor: 'var(--danger)',
-                color: 'white',
-                fontSize: '10px',
-                fontWeight: 'bold',
-                padding: '1px 5px',
-                borderRadius: '10px',
-                minWidth: '16px',
-                textAlign: 'center'
-              }}>
-                {unreadCount}
-              </span>
-            )}
-          </button>
-        </div>
-
         {/* 메인 콘텐츠 */}
         <div style={{ padding: '8px 8px 0 8px' }}>
           <div style={{

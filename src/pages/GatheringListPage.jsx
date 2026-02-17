@@ -211,18 +211,11 @@ export default function GatheringListPage() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px' }}>
       {/* 검색 영역 */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        marginBottom: '20px',
-        alignItems: 'stretch',
-      }}>
-        <div style={{
-          flex: 1,
-          position: 'relative',
-        }}>
+      <div style={{ marginBottom: '16px' }}>
+        {/* 검색창 */}
+        <div style={{ position: 'relative', marginBottom: isMobile ? '10px' : '0' }}>
           <Search
-            size={18}
+            size={isMobile ? 20 : 18}
             color="var(--text-muted)"
             style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}
           />
@@ -233,11 +226,11 @@ export default function GatheringListPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '14px 16px 14px 44px',
+              padding: isMobile ? '18px 16px 18px 50px' : '14px 16px 14px 44px',
               borderRadius: '14px',
               border: '1px solid rgba(0,0,0,0.08)',
               background: '#FFFFFF',
-              fontSize: '15px',
+              fontSize: isMobile ? '17px' : '15px',
               color: 'var(--text-primary)',
               outline: 'none',
               transition: 'all 0.2s',
@@ -253,53 +246,81 @@ export default function GatheringListPage() {
             }}
           />
         </div>
-        <button
-          onClick={handleAIRecommend}
-          disabled={isGeneratingAI}
-          style={{
-            padding: '14px 20px',
-            borderRadius: '14px',
-            border: 'none',
-            background: 'var(--button-primary)',
-            color: '#FFFFFF',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: isGeneratingAI ? 'not-allowed' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
-            transition: 'all 0.2s',
-            opacity: isGeneratingAI ? 0.7 : 1,
-            position: 'relative',
-          }}
-          onMouseEnter={(e) => { if (!isGeneratingAI) e.currentTarget.style.background = 'var(--button-primary-hover)'; }}
-          onMouseLeave={(e) => { if (!isGeneratingAI) e.currentTarget.style.background = 'var(--button-primary)'; }}
-        >
-          <Sparkles size={16} />
-          {isGeneratingAI ? '분석 중...' : '맞춤 추천'}
-          {!profile?.is_premium && !isGeneratingAI && (
-            <span style={{
-              position: 'absolute',
-              top: '-7px',
-              right: '-7px',
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              backgroundColor: '#5a8a72',
+
+        {/* AI 맞춤 추천 버튼 — 모바일: 아래 풀폭, 데스크탑: 오른쪽 */}
+        {isMobile ? (
+          <button
+            onClick={handleAIRecommend}
+            disabled={isGeneratingAI}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              borderRadius: '14px',
+              border: 'none',
+              background: 'var(--button-primary)',
               color: '#FFFFFF',
-              fontSize: '11px',
-              fontWeight: '700',
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: isGeneratingAI ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '2px solid white',
-              lineHeight: 1,
-            }}>
-              {profile?.ai_recommendations_left ?? 3}
-            </span>
-          )}
-        </button>
+              gap: '8px',
+              transition: 'all 0.2s',
+              opacity: isGeneratingAI ? 0.7 : 1,
+              position: 'relative',
+            }}
+          >
+            <Sparkles size={16} />
+            {isGeneratingAI ? '분석 중...' : 'AI 맞춤 추천'}
+            {!profile?.is_premium && !isGeneratingAI && (
+              <span style={{
+                position: 'absolute', top: '-7px', right: '-7px',
+                width: '20px', height: '20px', borderRadius: '50%',
+                backgroundColor: '#5a8a72', color: '#FFFFFF',
+                fontSize: '11px', fontWeight: '700',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid white', lineHeight: 1,
+              }}>
+                {profile?.ai_recommendations_left ?? 3}
+              </span>
+            )}
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch', marginTop: '12px' }}>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={handleAIRecommend}
+              disabled={isGeneratingAI}
+              style={{
+                padding: '14px 20px', borderRadius: '14px', border: 'none',
+                background: 'var(--button-primary)', color: '#FFFFFF',
+                fontSize: '14px', fontWeight: '600',
+                cursor: isGeneratingAI ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                whiteSpace: 'nowrap', transition: 'all 0.2s',
+                opacity: isGeneratingAI ? 0.7 : 1, position: 'relative',
+              }}
+              onMouseEnter={(e) => { if (!isGeneratingAI) e.currentTarget.style.background = 'var(--button-primary-hover)'; }}
+              onMouseLeave={(e) => { if (!isGeneratingAI) e.currentTarget.style.background = 'var(--button-primary)'; }}
+            >
+              <Sparkles size={16} />
+              {isGeneratingAI ? '분석 중...' : '맞춤 추천'}
+              {!profile?.is_premium && !isGeneratingAI && (
+                <span style={{
+                  position: 'absolute', top: '-7px', right: '-7px',
+                  width: '20px', height: '20px', borderRadius: '50%',
+                  backgroundColor: '#5a8a72', color: '#FFFFFF',
+                  fontSize: '11px', fontWeight: '700',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '2px solid white', lineHeight: 1,
+                }}>
+                  {profile?.ai_recommendations_left ?? 3}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 추천 태그 */}
@@ -394,7 +415,7 @@ export default function GatheringListPage() {
                 key={gathering.id}
                 onClick={() => navigate(`/gatherings/${gathering.id}`)}
                 style={{
-                  padding: '20px 24px',
+                  padding: isMobile ? '20px 16px' : '20px 24px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   background: 'transparent',
@@ -413,7 +434,7 @@ export default function GatheringListPage() {
               >
                 {/* 제목 (하이라이트 배경) */}
                 <h4 style={{
-                  fontSize: '17px',
+                  fontSize: isMobile ? '19px' : '17px',
                   fontWeight: '600',
                   color: 'var(--button-primary)',
                   margin: '0 0 6px 0',
@@ -424,7 +445,7 @@ export default function GatheringListPage() {
 
                 {/* 호스트 | 인원 */}
                 <div style={{
-                  fontSize: '13px',
+                  fontSize: isMobile ? '15px' : '13px',
                   color: 'var(--text-muted)',
                   marginBottom: '8px',
                 }}>
