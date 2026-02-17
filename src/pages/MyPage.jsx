@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function MyPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [createdGatherings, setCreatedGatherings] = useState([]);
   const [joinedGatherings, setJoinedGatherings] = useState([]);
   const [pendingGatherings, setPendingGatherings] = useState([]);
@@ -122,7 +124,7 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px' : '0' }}>
         <div style={{ textAlign: 'center', paddingTop: '60px' }}>
           <div style={{
             width: '40px',
@@ -140,7 +142,7 @@ export default function MyPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px' : '0' }}>
       {allGatherings.length === 0 ? (
         <div
           className="glass"

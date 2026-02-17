@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase';
 import { AVAILABLE_TAGS } from '../constants/tags';
 import PremiumModal from '../components/PremiumModal';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function CreateGatheringPage() {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
 
     const [mode, setMode] = useState('toggle');
     const { user, profile, refreshProfile } = useAuth();
@@ -286,7 +288,7 @@ export default function CreateGatheringPage() {
     );
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px', paddingBottom: '100px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px 80px' : '32px 24px 100px' }}>
             {/* 페이지 타이틀 */}
             <h1 style={{
                 fontSize: '24px',

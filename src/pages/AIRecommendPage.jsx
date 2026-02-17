@@ -3,11 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Sparkles } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function AIRecommendPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, profile: contextProfile } = useAuth();
+    const isMobile = useIsMobile();
     const [gatherings, setGatherings] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -107,7 +109,7 @@ export default function AIRecommendPage() {
     }
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px' }}>
 
             {/* 헤더 */}
             <div style={{ marginBottom: '20px' }}>

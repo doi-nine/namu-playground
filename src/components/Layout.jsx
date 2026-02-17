@@ -174,14 +174,14 @@ export default function Layout({ children }) {
         </div>
 
         {/* 메인 콘텐츠 */}
-        <div style={{ padding: '16px 12px 12px 12px' }}>
+        <div style={{ padding: '8px 8px 0 8px' }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3))',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255,255,255,0.5)',
-            borderRadius: '20px',
-            padding: '20px 20px 12px 20px',
+            borderRadius: '16px',
+            padding: '12px 8px 8px 8px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
           }}>
             {children}

@@ -4,12 +4,14 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import ChatTab from '../components/ChatTab';
 import ToolsTab from '../components/ToolsTab';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function GatheringDetailPage() {
   const { user: authUser, profile } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [gathering, setGathering] = useState(null);
   const [creator, setCreator] = useState(null);
   const [members, setMembers] = useState([]);
@@ -584,7 +586,7 @@ export default function GatheringDetailPage() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       {/* Main Card */}
-      <div style={{ padding: '28px 4px' }}>
+      <div style={{ padding: isMobile ? '12px 4px' : '28px 4px' }}>
         {/* Edit Button */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '12px' }}>
           {isCreator && (
@@ -673,12 +675,15 @@ export default function GatheringDetailPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div style={{
-          borderBottom: '2px solid rgba(0,0,0,0.06)',
-          marginBottom: '24px',
-          display: 'flex',
-          gap: '4px'
-        }}>
+        <div
+          className={isMobile ? 'tab-scroll' : ''}
+          style={{
+            borderBottom: '2px solid rgba(0,0,0,0.06)',
+            marginBottom: '24px',
+            display: 'flex',
+            gap: '4px',
+          }}
+        >
           {[
             { key: 'info', label: '모임' },
             { key: 'notices', label: '공지' },
@@ -690,15 +695,17 @@ export default function GatheringDetailPage() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
-                padding: '12px 20px',
+                padding: isMobile ? '10px 14px' : '12px 20px',
                 background: 'none',
                 border: 'none',
                 borderBottom: activeTab === tab.key ? '3px solid var(--button-primary)' : '3px solid transparent',
                 color: activeTab === tab.key ? 'var(--button-primary)' : 'var(--text-muted)',
                 fontWeight: activeTab === tab.key ? '600' : '400',
                 cursor: 'pointer',
-                fontSize: '15px',
-                transition: 'all 0.2s'
+                fontSize: isMobile ? '13px' : '15px',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               {tab.label}

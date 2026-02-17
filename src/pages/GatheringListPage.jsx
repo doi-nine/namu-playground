@@ -4,12 +4,14 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Search, RefreshCw, Sparkles } from 'lucide-react';
 import { AVAILABLE_TAGS } from '../constants/tags';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function GatheringListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, refreshProfile } = useAuth();
   const hasRun = useRef(false);
+  const isMobile = useIsMobile();
 
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -207,7 +209,7 @@ export default function GatheringListPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px' }}>
       {/* 검색 영역 */}
       <div style={{
         display: 'flex',

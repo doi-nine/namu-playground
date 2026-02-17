@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Star } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [popularityScore, setPopularityScore] = useState(0);
@@ -90,15 +92,20 @@ export default function ProfilePage() {
     borderBottom: '1px solid rgba(0,0,0,0.08)',
   };
 
+  const bannerHeight = isMobile ? 180 : 300;
+  const bannerInnerHeight = isMobile ? 156 : 276;
+  const bannerTop = isMobile ? 155 : 250;
+  const bannerLeft = isMobile ? 16 : 32;
+
   return (
-    <div style={{ position: 'relative', paddingTop: '300px' }}>
+    <div style={{ position: 'relative', paddingTop: `${bannerHeight}px` }}>
       {/* 배너 영역 - 투명 */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: '276px',
+        height: `${bannerInnerHeight}px`,
         background: 'transparent',
         borderRadius: '16px 16px 0 0',
       }} />
@@ -106,13 +113,15 @@ export default function ProfilePage() {
       {/* 닉네임 + 버튼 */}
       <div style={{
         position: 'absolute',
-        top: '250px',
-        left: '32px',
+        top: `${bannerTop}px`,
+        left: `${bannerLeft}px`,
         right: '8px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         zIndex: 2,
+        flexWrap: isMobile ? 'wrap' : 'nowrap',
+        gap: isMobile ? '8px' : '0',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
           <h1 style={{
@@ -184,13 +193,16 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 메인 콘텐츠 - 2열 그리드 */}
-      <div style={{
-        padding: '0 8px 8px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '24px',
-      }}>
+      {/* 메인 콘텐츠 - 2열 그리드 (모바일 1열) */}
+      <div
+        className={isMobile ? 'grid-mobile-col' : ''}
+        style={{
+          padding: isMobile ? '0 4px 8px' : '0 8px 8px',
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? '16px' : '24px',
+        }}
+      >
         {/* 왼쪽 열 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* 취미 카드 - 200px */}
@@ -222,11 +234,11 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 오른쪽 열 - 왼쪽 열과 동일한 높이 (200+24+200=424px) */}
+        {/* 오른쪽 열 */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '424px',
+          height: isMobile ? 'auto' : '424px',
         }}>
           {/* 자기소개 카드 - flexGrow로 남은 공간 차지 */}
           <div style={{
