@@ -33,7 +33,7 @@ function AppLayout({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <div style={{
+      <div className="app-bg" style={{
         minHeight: '100vh',
         background: `
           radial-gradient(ellipse at 15% 20%, rgba(254, 249, 195, 0.35), transparent 45%),

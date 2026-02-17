@@ -123,6 +123,13 @@ button:focus-visible {
   }
 }
 
+/* 모바일에서 background-attachment: fixed → position:fixed 깨짐 방지 */
+@media (max-width: 767px) {
+  .app-bg {
+    background-attachment: scroll !important;
+  }
+}
+
 /* 반응형 유틸리티 */
 @media (max-width: 767px) {
   /* 2열 그리드 → 1열 */
