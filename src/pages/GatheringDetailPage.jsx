@@ -584,7 +584,7 @@ export default function GatheringDetailPage() {
   });
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', ...(isMobile ? { width: '80%' } : {}) }}>
       {/* Main Card */}
       <div style={{ padding: isMobile ? '12px 4px' : '28px 4px' }}>
         {/* Edit Button */}
