@@ -174,7 +174,7 @@ export default function PopularityPage() {
                 marginBottom: '16px',
                 textAlign: 'center',
             }}>
-                <div style={{ fontSize: '40px', marginBottom: '4px' }}>⭐</div>
+                <div style={{ fontSize: '40px', marginBottom: '4px' }}>❤️</div>
                 <div style={{ marginBottom: '4px' }}>
                     <span style={{
                         fontSize: '48px',

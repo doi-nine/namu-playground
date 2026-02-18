@@ -857,7 +857,7 @@ export default function GatheringDetailPage() {
                         fontWeight: 'bold',
                         color: creator.popularity_score >= 0 ? '#16A34A' : 'var(--danger)'
                       }}>
-                        ⭐ {creator.popularity_score >= 0 ? '+' : ''}{creator.popularity_score}
+                        ❤️ {creator.popularity_score >= 0 ? '+' : ''}{creator.popularity_score}
                       </span>
                     )}
                   </div>
@@ -904,7 +904,7 @@ export default function GatheringDetailPage() {
                           fontWeight: 'bold',
                           color: member.popularity_score >= 0 ? '#16A34A' : 'var(--danger)'
                         }}>
-                          ⭐ {member.popularity_score >= 0 ? '+' : ''}{member.popularity_score}
+                          ❤️ {member.popularity_score >= 0 ? '+' : ''}{member.popularity_score}
                         </span>
                       )}
                     </div>
@@ -1443,7 +1443,7 @@ export default function GatheringDetailPage() {
                               fontWeight: '600',
                             }}
                           >
-                            ⭐ 평가하기
+                            ❤️ 평가하기
                           </button>
                         </div>
                       )}

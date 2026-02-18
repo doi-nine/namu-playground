@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Star } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function ProfilePage() {
@@ -165,7 +165,7 @@ export default function ProfilePage() {
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
           >
-            <Star size={18} color="#EAB308" fill="#EAB308" />
+            <Heart size={18} color="#F43F5E" fill="#F43F5E" />
             <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
               {popularityScore}
             </span>

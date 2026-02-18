@@ -25,14 +25,27 @@ export default function AIRecommendPage() {
 
     async function fetchGatherings() {
         try {
+            // 이미 가입(신청 포함)한 모임 ID 조회
+            const { data: joined } = await supabase
+                .from('gathering_members')
+                .select('gathering_id')
+                .eq('user_id', user.id);
+            const joinedIds = new Set((joined || []).map(m => m.gathering_id));
+
             const { data, error } = await supabase
                 .from('gatherings')
                 .select('*')
                 .gte('datetime', new Date().toISOString())
+                .neq('creator_id', user.id)
                 .order('datetime', { ascending: true })
-                .limit(20);
+                .limit(50);
+
             if (error) throw error;
-            const available = (data || []).filter(g => g.current_members < g.max_members);
+
+            // 가입한 모임(status 무관) + 정원 초과 제외
+            const available = (data || []).filter(
+                g => !joinedIds.has(g.id) && g.current_members < g.max_members
+            ).slice(0, 20);
             setGatherings(available);
             if (available.length > 0) {
                 await generateRecommendations(available);

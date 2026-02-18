@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -16,6 +16,7 @@ export default function ManageGatheringPage() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [completing, setCompleting] = useState(false);
+  const [memberCount, setMemberCount] = useState(0);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -31,6 +32,72 @@ export default function ManageGatheringPage() {
       fetchGathering();
     }
   }, [id, user]);
+
+  // 실제 승인 멤버 수 직접 조회
+  const fetchMemberCount = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { count } = await supabase
+        .from('gathering_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('gathering_id', id)
+        .eq('status', 'approved');
+      if (count !== null) setMemberCount(count);
+    } catch (e) {
+      // 조회 실패 시 gatherings 테이블에서 fallback
+      const { data } = await supabase
+        .from('gatherings')
+        .select('current_members')
+        .eq('id', id)
+        .maybeSingle();
+      if (data) setMemberCount(data.current_members);
+    }
+  }, [id]);
+
+  // 멤버 수 실시간 반영: 폴링 + 포커스/탭복귀 + Realtime 구독
+  useEffect(() => {
+    if (!id) return;
+
+    // 10초 간격 폴링
+    const interval = setInterval(fetchMemberCount, 10000);
+
+    // 탭 복귀 시 재조회
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchMemberCount();
+    };
+    // 윈도우 포커스 시 재조회 (SPA 내 페이지 이동 후 복귀 대응)
+    const handleFocus = () => fetchMemberCount();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    // Realtime 구독 (설정되어 있으면 즉시 반영)
+    const channel = supabase
+      .channel(`manage_gathering_${id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'gathering_members',
+        filter: `gathering_id=eq.${id}`
+      }, fetchMemberCount)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'gatherings',
+        filter: `id=eq.${id}`
+      }, (payload) => {
+        setGathering(prev => prev ? { ...prev, ...payload.new } : prev);
+        fetchMemberCount();
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+      supabase.removeChannel(channel);
+    };
+  }, [id, fetchMemberCount]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -54,6 +121,14 @@ export default function ManageGatheringPage() {
       }
 
       setGathering(data);
+
+      // gathering_members에서 실제 승인된 멤버 수 조회
+      const { count } = await supabase
+        .from('gathering_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('gathering_id', id)
+        .eq('status', 'approved');
+      setMemberCount(count ?? data.current_members ?? 0);
 
       setFormData({
         title: data.title,
@@ -367,8 +442,8 @@ export default function ManageGatheringPage() {
 
             <div>
               <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px', color: 'var(--text-secondary)' }}>최대 인원</label>
-              <input type="number" value={formData.maxMembers} onChange={(e) => setFormData({ ...formData, maxMembers: e.target.value })} min={gathering.current_members} required style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>현재 참가자 수: {gathering.current_members}명</p>
+              <input type="number" value={formData.maxMembers} onChange={(e) => setFormData({ ...formData, maxMembers: e.target.value })} min={memberCount} required style={inputStyle} onFocus={focusHandler} onBlur={blurHandler} />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>현재 참가자 수: {memberCount}명</p>
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -403,7 +478,7 @@ export default function ManageGatheringPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>제목:</strong> {gathering.title}</p>
             <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>설명:</strong> {gathering.description}</p>
-            <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>인원:</strong> {gathering.current_members}/{gathering.max_members}명</p>
+            <p style={{ color: 'var(--text-primary)', fontSize: '14px', margin: 0 }}><strong>인원:</strong> {memberCount}/{gathering.max_members}명</p>
           </div>
         )}
       </div>
