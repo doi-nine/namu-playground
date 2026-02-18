@@ -92,7 +92,12 @@ export default function ScheduleDetailPage() {
 
   // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
   useEffect(() => {
-    if (isMobile) { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }
+    if (isMobile) {
+      requestAnimationFrame(() => {
+        const container = messagesContainerRef.current;
+        if (container) container.scrollTop = container.scrollHeight;
+      });
+    }
   }, [messages]);
 
   const fetchAll = async () => {
