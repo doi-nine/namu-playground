@@ -199,17 +199,18 @@ export default function GatheringDetailPage() {
           (myMems || []).forEach(m => { membershipMap[m.schedule_id] = true; });
           setMyScheduleMemberships(membershipMap);
 
-          // 완료된 일정 평가 여부 조회
+          // 완료된 일정 평가 여부 조회 (schedule_id 기반)
           const completedIds = (schedulesData || []).filter(s => s.is_completed).map(s => s.id);
           if (completedIds.length > 0) {
             const { data: evalData } = await supabase
               .from('popularity_votes')
               .select('schedule_id')
               .eq('from_user_id', currentUser.id)
-              .in('schedule_id', completedIds);
+              .in('schedule_id', completedIds)
+              .eq('is_active', true);
 
             const evalDoneMap = {};
-            (evalData || []).forEach(v => { evalDoneMap[v.schedule_id] = true; });
+            (evalData || []).forEach(v => { if (v.schedule_id) evalDoneMap[v.schedule_id] = true; });
             setScheduleEvalDone(evalDoneMap);
           }
         }
@@ -524,52 +525,31 @@ export default function GatheringDetailPage() {
   // 일정 평가 제출
   const handleSubmitScheduleEval = async () => {
     setScheduleEvalSubmitting(true);
-    const errors = [];
     try {
+      // 선택한 투표를 votes 배열로 구성
+      const votes = [];
       for (const [targetUserId, direction] of Object.entries(scheduleEvalVotes)) {
         if (!direction) continue;
         const voteType = direction === 'up' ? 'thumbs_up' : 'thumbs_down';
-        const { data: result, error } = await supabase.rpc('submit_schedule_eval', {
-          p_from_user_id: currentUser.id,
-          p_to_user_id: targetUserId,
-          p_vote_type: voteType,
-          p_schedule_id: activeEvalScheduleId,
-        });
-        if (error) { errors.push(error.message); continue; }
-        if (result && !result.success) { errors.push(result.error); continue; }
-
+        votes.push({ to_user_id: targetUserId, vote_type: voteType });
         if (direction === 'up') {
           for (const keyword of (scheduleEvalKeywords[targetUserId] || [])) {
-            const { error: kwErr } = await supabase.rpc('submit_schedule_eval', {
-              p_from_user_id: currentUser.id,
-              p_to_user_id: targetUserId,
-              p_vote_type: keyword,
-              p_schedule_id: activeEvalScheduleId,
-            });
-            if (kwErr) errors.push(`키워드(${keyword}): ${kwErr.message}`);
+            votes.push({ to_user_id: targetUserId, vote_type: keyword });
           }
         }
       }
 
-      // 평가 즉시 popularity_scores 반영
-      const ratedUserIds = Object.entries(scheduleEvalVotes)
-        .filter(([, dir]) => dir)
-        .map(([uid]) => uid);
-      if (ratedUserIds.length > 0) {
-        await supabase.functions.invoke('recalculate-popularity', {
-          body: { user_ids: ratedUserIds },
-        });
-        await refreshScores();
-      }
+      // submit-eval Edge Function으로 schedule_id 포함 저장 + 즉시 점수 반영
+      const { data, error } = await supabase.functions.invoke('submit-eval', {
+        body: { schedule_id: activeEvalScheduleId, votes },
+      });
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error);
 
+      await refreshScores();
       setScheduleEvalDone(prev => ({ ...prev, [activeEvalScheduleId]: true }));
       setActiveEvalScheduleId(null);
-
-      if (errors.length > 0) {
-        alert('평가가 완료되었지만 일부 오류가 있었습니다:\n' + errors.join('\n'));
-      } else {
-        alert('평가가 완료되었습니다!');
-      }
+      alert('평가가 완료되었습니다!');
     } catch (err) {
       console.error('평가 제출 오류:', err);
       alert('평가 제출 중 오류가 발생했습니다: ' + err.message);

@@ -120,7 +120,8 @@ export default function ScheduleDetailPage() {
           .from('popularity_votes')
           .select('id')
           .eq('from_user_id', currentUser.id)
-          .eq('schedule_id', scheduleId)
+          .eq('schedule_id', parseInt(scheduleId))
+          .eq('is_active', true)
           .limit(1);
         setEvalDone((evalData || []).length > 0);
       }
@@ -290,34 +291,22 @@ export default function ScheduleDetailPage() {
   const handleSubmitEval = async () => {
     setEvalSubmitting(true);
     try {
-      const ratedUserIds = [];
+      const votes = [];
       for (const [targetId, direction] of Object.entries(evalVotes)) {
         if (!direction) continue;
         const voteType = direction === 'up' ? 'thumbs_up' : 'thumbs_down';
-        await supabase.rpc('submit_schedule_eval', {
-          p_from_user_id: currentUser.id,
-          p_to_user_id: targetId,
-          p_vote_type: voteType,
-          p_schedule_id: parseInt(scheduleId),
-        });
-        ratedUserIds.push(targetId);
+        votes.push({ to_user_id: targetId, vote_type: voteType });
         if (direction === 'up') {
           for (const kw of (evalKeywords[targetId] || [])) {
-            await supabase.rpc('submit_schedule_eval', {
-              p_from_user_id: currentUser.id,
-              p_to_user_id: targetId,
-              p_vote_type: kw,
-              p_schedule_id: parseInt(scheduleId),
-            });
+            votes.push({ to_user_id: targetId, vote_type: kw });
           }
         }
       }
-      // 평가 즉시 popularity_scores 반영
-      if (ratedUserIds.length > 0) {
-        await supabase.functions.invoke('recalculate-popularity', {
-          body: { user_ids: ratedUserIds },
-        });
-      }
+      const { data, error } = await supabase.functions.invoke('submit-eval', {
+        body: { schedule_id: parseInt(scheduleId), votes },
+      });
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error);
       setEvalDone(true);
       setShowEval(false);
       alert('평가가 완료되었습니다!');
