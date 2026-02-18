@@ -294,7 +294,7 @@ export default function CreateGatheringPage() {
                 fontSize: '24px',
                 fontWeight: '700',
                 marginBottom: '24px',
-                color: 'var(--button-primary)',
+                color: isMobile ? 'var(--text-primary)' : 'var(--button-primary)',
             }}>
                 새 모임 만들기
             </h1>

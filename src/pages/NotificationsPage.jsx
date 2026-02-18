@@ -192,7 +192,7 @@ export default function NotificationsPage() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '93%' } : {}) }}>
-      <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px', color: 'var(--button-primary)' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px', color: isMobile ? 'var(--text-primary)' : 'var(--button-primary)' }}>
         알림
       </h1>
 
