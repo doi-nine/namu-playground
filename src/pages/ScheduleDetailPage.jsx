@@ -516,9 +516,18 @@ export default function ScheduleDetailPage() {
 
           {/* 참여 멤버 */}
           <div style={{ backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: '14px', padding: '24px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-primary)' }}>
-              참여 멤버 ({members.length}명)
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>
+                참여 멤버 ({members.length}명)
+              </h2>
+              {members.length > 0 && (
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  보류: <strong style={{ color: 'var(--text-primary)' }}>{members.filter(m => m.attendance_status !== 'confirmed').length}</strong>
+                  {' '}|{' '}
+                  확정: <strong style={{ color: 'var(--button-primary)' }}>{members.filter(m => m.attendance_status === 'confirmed').length}</strong>
+                </span>
+              )}
+            </div>
             {members.length === 0 ? (
               <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>아직 참여한 멤버가 없습니다.</p>
             ) : (
