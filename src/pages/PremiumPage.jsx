@@ -45,7 +45,7 @@ export default function PremiumPage() {
     };
 
     const freeFeatures = [
-        { icon: '🤖', title: 'AI 맞춤 추천', desc: '월 3회' },
+        { icon: '🤖', title: 'AI 모임 맞춤 추천', desc: '월 3회' },
         { icon: '💬', title: 'AI 채팅 요약', desc: '월 3회' },
         { icon: '✍️', title: 'AI 글쓰기 보조 (모임/프로필)', desc: '월 3회' },
         { icon: '⭐', title: '매너도 확인', desc: '불가' },
