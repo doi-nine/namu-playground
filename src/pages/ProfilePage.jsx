@@ -209,20 +209,6 @@ export default function ProfilePage() {
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
             <h3 style={cardTitleStyle}>취미</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
-              {profile?.recent_games ? (
-                profile.recent_games.split(',').map((game, idx) => (
-                  <p key={idx} style={{ margin: '0 0 4px 0' }}>• {game.trim()}</p>
-                ))
-              ) : profile?.favorite_game_title ? (
-                <p style={{ margin: 0 }}>• {profile.favorite_game_title}</p>
-              ) : null}
-            </div>
-          </div>
-
-          {/* 좋아하는 것 카드 - 200px */}
-          <div style={{ ...innerCardStyle, minHeight: '200px' }}>
-            <h3 style={cardTitleStyle}>하고 싶은 것</h3>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
               {profile?.favorite_game_categories?.length > 0 ? (
                 profile.favorite_game_categories.map((game, idx) => (
                   <p key={idx} style={{ margin: '0 0 4px 0' }}>• {game}</p>
@@ -230,6 +216,20 @@ export default function ProfilePage() {
               ) : (
                 <p style={{ margin: 0, color: 'var(--text-muted)' }}>등록된 게임이 없습니다</p>
               )}
+            </div>
+          </div>
+
+          {/* 하고 싶은 것 카드 - 200px */}
+          <div style={{ ...innerCardStyle, minHeight: '200px' }}>
+            <h3 style={cardTitleStyle}>하고 싶은 것</h3>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
+              {profile?.recent_games ? (
+                profile.recent_games.split(',').map((game, idx) => (
+                  <p key={idx} style={{ margin: '0 0 4px 0' }}>• {game.trim()}</p>
+                ))
+              ) : profile?.favorite_game_title ? (
+                <p style={{ margin: 0 }}>• {profile.favorite_game_title}</p>
+              ) : null}
             </div>
           </div>
         </div>
