@@ -642,7 +642,7 @@ export default function ScheduleDetailPage() {
               </div>
 
               {/* 입력창 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div>
                 <div className="glass" style={{ display: 'flex', gap: isMobile ? '4px' : '8px', padding: isMobile ? '10px 12px' : '14px', borderRadius: '14px', position: 'sticky', bottom: 0 }}>
                   <input
                     type="text"
@@ -651,8 +651,8 @@ export default function ScheduleDetailPage() {
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="메시지를 입력하세요..."
                     style={{
-                      flex: isMobile ? '0 1 auto' : 1,
-                      minWidth: isMobile ? '100px' : 'auto',
+                      flex: 1,
+                      minWidth: 0,
                       padding: isMobile ? '9px 12px' : '12px 16px',
                       background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)',
                       borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
@@ -672,8 +672,6 @@ export default function ScheduleDetailPage() {
                   >
                     전송
                   </button>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: isMobile ? '12px' : '0' }}>
                   <button
                     onClick={handleSummarize}
                     disabled={summaryLoading || messages.length === 0}

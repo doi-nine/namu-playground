@@ -317,7 +317,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
             </div>
 
             {/* 입력 필드 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div>
                 <div className="glass" style={{
                     display: 'flex',
                     gap: isMobile ? '4px' : '8px',
@@ -333,8 +333,8 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                         placeholder="메시지를 입력하세요..."
                         style={{
-                            flex: isMobile ? '0 1 auto' : 1,
-                            minWidth: isMobile ? '100px' : 'auto',
+                            flex: 1,
+                            minWidth: 0,
                             padding: isMobile ? '9px 12px' : '12px 16px',
                             background: 'rgba(255,255,255,0.5)',
                             border: '1px solid rgba(0,0,0,0.06)',
@@ -362,8 +362,6 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                     >
                         전송
                     </button>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: isMobile ? '12px' : '0' }}>
                     <button
                         onClick={handleSummarize}
                         disabled={summaryLoading || messages.length === 0}
