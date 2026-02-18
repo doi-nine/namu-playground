@@ -132,12 +132,13 @@ button:focus-visible {
   }
 }
 
-/* 모바일 오버스크롤/노치 영역 흰색 처리 + 스크롤 방지 */
+/* 모바일: body 스크롤 완전 차단 (콘텐츠 영역 내부에서만 스크롤) */
 @media (max-width: 767px) {
   html, body {
     background-color: #FFFFFF;
-    overflow-x: hidden;
+    overflow: hidden;
     overscroll-behavior: none;
+    height: 100%;
   }
 }
 
