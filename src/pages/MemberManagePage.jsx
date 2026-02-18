@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function MemberManagePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [gathering, setGathering] = useState(null);
   const [members, setMembers] = useState([]);
   const [pendingApplicants, setPendingApplicants] = useState([]);
-  const [activeTab, setActiveTab] = useState('members');
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'members');
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
 
@@ -403,12 +404,14 @@ export default function MemberManagePage() {
           {pendingApplicants.map((applicant) => (
             <div
               key={applicant.id}
+              onClick={() => navigate(`/users/${applicant.user_id}`)}
               style={{
                 padding: '16px',
                 backgroundColor: 'rgba(255,255,255,0.75)',
                 borderRadius: '14px',
                 border: '1px solid rgba(0,0,0,0.06)',
                 overflow: 'hidden',
+                cursor: 'pointer',
               }}
             >
               <div style={{ marginBottom: '12px' }}>
@@ -465,7 +468,7 @@ export default function MemberManagePage() {
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  onClick={() => handleApprove(applicant)}
+                  onClick={(e) => { e.stopPropagation(); handleApprove(applicant); }}
                   style={{
                     flex: 1,
                     padding: '10px 0',
@@ -481,7 +484,7 @@ export default function MemberManagePage() {
                   승인
                 </button>
                 <button
-                  onClick={() => handleReject(applicant)}
+                  onClick={(e) => { e.stopPropagation(); handleReject(applicant); }}
                   style={{
                     flex: 1,
                     padding: '10px 0',

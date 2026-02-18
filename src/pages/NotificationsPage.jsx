@@ -81,9 +81,13 @@ export default function NotificationsPage() {
 
   const handleNotificationClick = async (notification) => {
     let targetPath = null;
+    let targetState = null;
 
     if (notification.type === 'popularity_received') {
       targetPath = '/popularity';
+    } else if (notification.type === 'application_received' && notification.gathering_id) {
+      targetPath = `/gatherings/${notification.gathering_id}/members`;
+      targetState = { tab: 'pending' };
     } else if (notification.gathering_id) {
       targetPath = `/gatherings/${notification.gathering_id}`;
     }
@@ -92,7 +96,7 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.filter(n => n.id !== notification.id));
 
     if (targetPath) {
-      navigate(targetPath);
+      navigate(targetPath, targetState ? { state: targetState } : undefined);
     }
   };
 
