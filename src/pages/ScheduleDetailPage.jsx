@@ -7,7 +7,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 export default function ScheduleDetailPage() {
   const { id, scheduleId } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const isMobile = useIsMobile();
 
   const [schedule, setSchedule] = useState(null);
@@ -225,7 +225,7 @@ export default function ScheduleDetailPage() {
 
     // 무료 유저 횟수 체크 (프론트 사전 검증)
     if (!profile?.is_premium) {
-      const left = profile?.ai_chat_summary_left ?? 3;
+      const left = summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3);
       if (left <= 0) {
         alert('이번 달 무료 채팅 요약 횟수를 모두 사용했습니다. 프리미엄으로 업그레이드하면 무제한으로 이용할 수 있어요!');
         return;
@@ -260,7 +260,7 @@ export default function ScheduleDetailPage() {
       setShowSummaryModal(true);
 
       // 프로필 새로고침 (잔여 횟수 동기화)
-      // Note: This would require passing refreshProfile from useAuth
+      if (!profile?.is_premium) { refreshProfile(); }
     } catch (err) {
       console.error('채팅 요약 오류:', err);
       alert('채팅 요약 중 오류가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
@@ -673,7 +673,7 @@ export default function ScheduleDetailPage() {
                   <button
                     onClick={handleSummarize}
                     disabled={summaryLoading || messages.length === 0}
-                    title={profile?.is_premium ? 'AI 대화 요약' : `AI 대화 요약 (잔여 ${profile?.ai_chat_summary_left ?? 3}회)`}
+                    title={profile?.is_premium ? 'AI 대화 요약' : `AI 대화 요약 (잔여 ${summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3)}회)`}
                     style={{
                       padding: isMobile ? '9px 12px' : '12px 16px',
                       background: '#FFFFFF',
@@ -724,7 +724,7 @@ export default function ScheduleDetailPage() {
                         width: '18px',
                         height: '18px',
                         borderRadius: '50%',
-                        backgroundColor: (profile?.ai_chat_summary_left ?? 3) > 0 ? 'var(--button-primary)' : 'var(--danger)',
+                        backgroundColor: (summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3)) > 0 ? 'var(--button-primary)' : 'var(--danger)',
                         color: '#FFFFFF',
                         fontSize: '10px',
                         fontWeight: '700',
@@ -733,7 +733,7 @@ export default function ScheduleDetailPage() {
                         justifyContent: 'center',
                         border: '2px solid white',
                       }}>
-                        {profile?.ai_chat_summary_left ?? 3}
+                        {summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3)}
                       </span>
                     )}
                   </button>

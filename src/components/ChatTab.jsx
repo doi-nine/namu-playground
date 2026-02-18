@@ -115,7 +115,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
 
         // 무료 유저 횟수 체크 (프론트 사전 검증)
         if (!profile?.is_premium) {
-            const left = profile?.ai_chat_summary_left ?? 3;
+            const left = summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3);
             if (left <= 0) {
                 alert('이번 달 무료 채팅 요약 횟수를 모두 사용했습니다. 프리미엄으로 업그레이드하면 무제한으로 이용할 수 있어요!');
                 return;
@@ -198,7 +198,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
         );
     }
 
-    const summaryLeft = profile?.ai_chat_summary_left ?? 3;
+    const summaryLeft = summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3);
     const isPremium = profile?.is_premium;
 
     return (
