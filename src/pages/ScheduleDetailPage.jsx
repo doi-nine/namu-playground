@@ -80,6 +80,11 @@ export default function ScheduleDetailPage() {
     }
   }, [activeTab, currentUser]);
 
+  // 초기 로드 완료 시 최하단으로 즉시 스크롤 (모바일/데스크탑 공통)
+  useEffect(() => {
+    if (!chatLoading) { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }
+  }, [chatLoading]);
+
   // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
   useEffect(() => {
     if (isMobile) { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }
