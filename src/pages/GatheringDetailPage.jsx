@@ -299,7 +299,7 @@ export default function GatheringDetailPage() {
 
   const handleCancel = async () => {
     if (!myMembership) return;
-    if (!confirm('정말 참가를 취소하시겠습니까?')) return;
+    if (!confirm('정말 참가를 취소하시겠습니까?\n\n모임 탈퇴 시 가입된 모든 일정도 함께 탈퇴됩니다.')) return;
     try {
       // 1. 현재 모임의 모든 일정에서 사용자 탈퇴 처리
       const { data: gatheringSchedules } = await supabase
