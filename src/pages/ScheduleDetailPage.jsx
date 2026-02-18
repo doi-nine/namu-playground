@@ -342,7 +342,7 @@ export default function ScheduleDetailPage() {
     );
   }
 
-  if (!gatheringMembership) {
+  if (!gatheringMembership || gatheringMembership.status === 'kicked') {
     return (
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px', textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
