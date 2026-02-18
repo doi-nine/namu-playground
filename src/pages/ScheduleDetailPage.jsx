@@ -641,7 +641,7 @@ export default function ScheduleDetailPage() {
 
               {/* 입력창 */}
               <div>
-                <div className="glass" style={{ display: 'flex', gap: isMobile ? '4px' : '8px', padding: isMobile ? '10px 12px' : '14px', borderRadius: '14px', position: 'sticky', bottom: 0 }}>
+                <div className="glass" style={{ display: 'flex', gap: isMobile ? '4px' : '8px', padding: isMobile ? '10px 12px' : '14px', borderRadius: '14px' }}>
                   <input
                     type="text"
                     value={newMessage}

@@ -320,9 +320,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                     display: 'flex',
                     gap: isMobile ? '4px' : '8px',
                     padding: isMobile ? '10px 12px' : '16px',
-                    borderRadius: '14px',
-                    position: 'sticky',
-                    bottom: 0
+                    borderRadius: '14px'
                 }}>
                     <input
                         type="text"
