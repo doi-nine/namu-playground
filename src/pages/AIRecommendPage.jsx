@@ -25,13 +25,14 @@ export default function AIRecommendPage() {
 
     async function fetchGatherings() {
         try {
-            // 이미 가입(신청 포함)한 모임 ID 조회
-            const { data: joined } = await supabase
+            // 1) 내가 가입한 모임 ID 목록 가져오기
+            const { data: myMemberships } = await supabase
                 .from('gathering_members')
                 .select('gathering_id')
                 .eq('user_id', user.id);
-            const joinedIds = new Set((joined || []).map(m => m.gathering_id));
+            const joinedIds = new Set((myMemberships || []).map(m => m.gathering_id));
 
+            // 2) 모임 목록 가져오기 (내가 만든 모임 제외)
             const { data, error } = await supabase
                 .from('gatherings')
                 .select('*')
@@ -42,10 +43,10 @@ export default function AIRecommendPage() {
 
             if (error) throw error;
 
-            // 가입한 모임(status 무관) + 정원 초과 제외
+            // 3) 가입한 모임 + 정원 초과 제외
             const available = (data || []).filter(
                 g => !joinedIds.has(g.id) && g.current_members < g.max_members
-            ).slice(0, 20);
+            ).slice(0, 30);
             setGatherings(available);
             if (available.length > 0) {
                 await generateRecommendations(available);
@@ -68,7 +69,7 @@ export default function AIRecommendPage() {
         setGenerating(true);
         try {
             const { data, error } = await supabase.functions.invoke('ai-recommend', {
-                body: { profile, gatherings: gatheringsData }
+                body: { profile, gatherings: gatheringsData, userId: user.id }
             });
             if (error) throw error;
             const recs = data?.recommendations || [];
