@@ -15,6 +15,7 @@ export default function GatheringDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { isBookmarked, toggleBookmark } = useBookmarks();
   const [gathering, setGathering] = useState(null);
   const [creator, setCreator] = useState(null);
   const [members, setMembers] = useState([]);
@@ -616,7 +617,6 @@ export default function GatheringDetailPage() {
     );
   }
 
-  const { isBookmarked, toggleBookmark } = useBookmarks();
   const isCreator = currentUser && gathering.creator_id === currentUser.id;
   const nonCreatorMembers = members.filter(m => m.user_id !== gathering.creator_id);
   const actualMemberCount = nonCreatorMembers.length + (creator ? 1 : 0);
