@@ -185,7 +185,7 @@ export default function PopularityPage() {
                     </span>
                 </div>
                 <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                    총 {totalVotes}개의 투표를 받았어요
+                    총 {totalVotes}개의 평가를 받았어요
                 </p>
             </div>
 
@@ -273,7 +273,7 @@ export default function PopularityPage() {
                     color: 'var(--text-primary)',
                     marginBottom: '16px',
                 }}>
-                    최근 받은 투표
+                    최근 받은 평가
                 </h2>
                 {recentVoters.length === 0 ? (
                     <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>
