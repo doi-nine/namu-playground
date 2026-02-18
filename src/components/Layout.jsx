@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -111,66 +110,62 @@ export default function Layout({ children }) {
     { path: '/profile', label: '프로필', icon: User },
   ];
 
-  // 모바일 하단 탭바
+  // 모바일 하단 탭바 — position:fixed 대신 flexbox 레이아웃 사용
   if (isMobile) {
-    const tabBar = (
-      <div className="bottom-tab-bar" style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        padding: '8px 0',
-        background: '#FFFFFF',
-        borderTop: '1px solid rgba(0,0,0,0.08)',
-      }}>
-        {mobileTabItems.map(item => {
-          const Icon = item.icon;
-          const active = isActive(item.path)
-            || (item.path === '/my/settings' && location.pathname.startsWith('/my/'))
-            || (item.path === '/gatherings' && location.pathname.startsWith('/gatherings'));
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '2px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 12px',
-                borderRadius: '8px',
-                transition: 'all 0.2s',
-              }}
-            >
-              <Icon
-                size={22}
-                color={active ? 'var(--button-primary)' : 'var(--text-muted)'}
-                strokeWidth={active ? 2.5 : 1.8}
-              />
-              <span style={{
-                fontSize: '10px',
-                fontWeight: active ? '600' : '400',
-                color: active ? 'var(--button-primary)' : 'var(--text-muted)',
-              }}>
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    );
-
     return (
-      <div style={{ paddingBottom: '80px' }}>
-        {children}
-        {createPortal(tabBar, document.body)}
+      <div className="mobile-layout">
+        <div className="mobile-content">
+          {children}
+        </div>
+
+        {/* 탭바: flexbox의 하단 고정 영역 (position:fixed 사용 안 함) */}
+        <div className="bottom-tab-bar" style={{
+          flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          padding: '8px 0',
+          background: '#FFFFFF',
+          borderTop: '1px solid rgba(0,0,0,0.08)',
+        }}>
+          {mobileTabItems.map(item => {
+            const Icon = item.icon;
+            const active = isActive(item.path)
+              || (item.path === '/my/settings' && location.pathname.startsWith('/my/'))
+              || (item.path === '/gatherings' && location.pathname.startsWith('/gatherings'));
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 12px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <Icon
+                  size={22}
+                  color={active ? 'var(--button-primary)' : 'var(--text-muted)'}
+                  strokeWidth={active ? 2.5 : 1.8}
+                />
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: active ? '600' : '400',
+                  color: active ? 'var(--button-primary)' : 'var(--text-muted)',
+                }}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }

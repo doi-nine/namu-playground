@@ -139,6 +139,22 @@ button:focus-visible {
   }
 }
 
+/* 모바일 Flexbox 레이아웃 — position:fixed 없이 탭바 고정 */
+.mobile-layout {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobile-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 /* 반응형 유틸리티 */
 @media (max-width: 767px) {
   /* 2열 그리드 → 1열 */
