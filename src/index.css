@@ -132,10 +132,11 @@ button:focus-visible {
   }
 }
 
-/* 모바일 오버스크롤/노치 영역 흰색 처리 */
+/* 모바일 오버스크롤/노치 영역 흰색 처리 + 좌우 스크롤 방지 */
 @media (max-width: 767px) {
   html, body {
     background-color: #FFFFFF;
+    overflow-x: hidden;
   }
 }
 
@@ -151,6 +152,7 @@ button:focus-visible {
 .mobile-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
