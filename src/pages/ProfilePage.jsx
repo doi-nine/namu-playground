@@ -98,7 +98,7 @@ export default function ProfilePage() {
   const bannerLeft = isMobile ? 12 : 32;
 
   return (
-    <div style={{ position: 'relative', paddingTop: `${bannerHeight}px` }}>
+    <div style={{ position: 'relative', paddingTop: `${bannerHeight}px`, ...(isMobile ? { width: '93%', margin: '0 auto' } : {}) }}>
       {/* 배너 영역 - 투명 */}
       <div style={{
         position: 'absolute',
