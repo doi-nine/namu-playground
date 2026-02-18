@@ -301,6 +301,24 @@ export default function GatheringDetailPage() {
     if (!myMembership) return;
     if (!confirm('정말 참가를 취소하시겠습니까?')) return;
     try {
+      // 1. 현재 모임의 모든 일정에서 사용자 탈퇴 처리
+      const { data: schedules } = await supabase
+        .from('schedules')
+        .select('id')
+        .eq('gathering_id', id);
+
+      if (schedules && schedules.length > 0) {
+        for (const schedule of schedules) {
+          // 해당 일정의 schedule_members에서 사용자 삭제
+          await supabase
+            .from('schedule_members')
+            .delete()
+            .eq('schedule_id', schedule.id)
+            .eq('user_id', currentUser.id);
+        }
+      }
+
+      // 2. 모임 멤버십 삭제
       const { error: deleteError } = await supabase.from('gathering_members').delete().eq('gathering_id', id).eq('user_id', currentUser.id);
       if (deleteError) throw deleteError;
       if (myMembership.status === 'approved') {
