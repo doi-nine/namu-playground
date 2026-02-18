@@ -31,6 +31,7 @@ export default function PopularityPage() {
     const isMobile = useIsMobile();
     const [scores, setScores] = useState(null);
     const [recentVoters, setRecentVoters] = useState([]);
+    const [totalVoteCount, setTotalVoteCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [targetNickname, setTargetNickname] = useState(null);
 
@@ -87,6 +88,14 @@ export default function PopularityPage() {
                 .limit(10);
 
             setRecentVoters(votesData || []);
+
+            const { count } = await supabase
+                .from('popularity_votes')
+                .select('*', { count: 'exact', head: true })
+                .eq('to_user_id', targetUserId)
+                .eq('is_active', true);
+
+            setTotalVoteCount(count || 0);
         } catch (err) {
             console.error('인기도 데이터 로드 오류:', err);
         } finally {
@@ -129,9 +138,7 @@ export default function PopularityPage() {
     }
 
     const totalScore = scores?.total_score || 0;
-    const totalVotes = voteTypes.reduce((sum, t) => sum + (scores?.[`${t.id}_count`] || 0), 0)
-        + (scores?.thumbs_up_count || 0)
-        + (scores?.thumbs_down_count || 0);
+    const totalVotes = totalVoteCount;
     const maxCount = Math.max(1, ...voteTypes.map(t => scores?.[`${t.id}_count`] || 0));
 
     return (
