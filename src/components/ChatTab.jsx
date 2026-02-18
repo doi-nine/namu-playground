@@ -334,7 +334,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                         placeholder="메시지를 입력하세요..."
                         style={{
                             flex: isMobile ? '0 1 auto' : 1,
-                            minWidth: isMobile ? '140px' : 'auto',
+                            minWidth: isMobile ? '100px' : 'auto',
                             padding: isMobile ? '9px 12px' : '12px 16px',
                             background: 'rgba(255,255,255,0.5)',
                             border: '1px solid rgba(0,0,0,0.06)',
@@ -348,19 +348,19 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                         onClick={sendMessage}
                         disabled={!newMessage.trim()}
                         style={{
-                            padding: isMobile ? '9px 14px' : '12px 24px',
+                            padding: isMobile ? '9px 10px' : '12px 24px',
                             background: newMessage.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
                             color: newMessage.trim() ? '#FFFFFF' : 'var(--text-muted)',
                             border: 'none',
                             borderRadius: '10px',
                             fontWeight: '600',
                             cursor: newMessage.trim() ? 'pointer' : 'not-allowed',
-                            fontSize: isMobile ? '12px' : '14px',
+                            fontSize: isMobile ? '11px' : '14px',
                             transition: 'all 0.2s',
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {isMobile ? '전' : '전송'}
+                        전송
                     </button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: isMobile ? '12px' : '0' }}>
