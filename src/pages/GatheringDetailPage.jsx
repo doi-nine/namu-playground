@@ -700,7 +700,7 @@ export default function GatheringDetailPage() {
                 background: 'none',
                 border: 'none',
                 borderBottom: activeTab === tab.key ? '3px solid var(--button-primary)' : '3px solid transparent',
-                color: activeTab === tab.key ? 'var(--button-primary)' : 'var(--text-muted)',
+                color: activeTab === tab.key ? 'var(--button-primary)' : (isMobile ? '#6E7B70' : 'var(--text-muted)'),
                 fontWeight: activeTab === tab.key ? '600' : '400',
                 cursor: 'pointer',
                 fontSize: isMobile ? '13px' : '15px',
