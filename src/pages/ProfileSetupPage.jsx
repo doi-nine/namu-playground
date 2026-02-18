@@ -11,6 +11,7 @@ export default function ProfileSetupPage() {
   const { refreshProfile } = useAuth();
 
   const [nickname, setNickname] = useState("");
+  const [nicknameError, setNicknameError] = useState("");
   const [favoriteGameCategories, setFavoriteGameCategories] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const [birthYear, setBirthYear] = useState("");
@@ -96,6 +97,20 @@ export default function ProfileSetupPage() {
       alert("닉네임은 필수입니다!");
       return;
     }
+
+    // 닉네임 중복 체크
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('nickname', nickname.trim())
+      .neq('id', user?.id ?? '')
+      .maybeSingle();
+    if (existing) {
+      setNicknameError('이미 사용 중인 닉네임입니다.');
+      return;
+    }
+    setNicknameError('');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -323,11 +338,16 @@ export default function ProfileSetupPage() {
               type="text"
               placeholder="닉네임"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              style={inputStyle}
+              onChange={(e) => { if (e.target.value.length <= 10) { setNickname(e.target.value); setNicknameError(''); } }}
+              maxLength={10}
+              style={{ ...inputStyle, ...(nicknameError ? { borderColor: '#DC2626', boxShadow: '0 0 0 2px rgba(220,38,38,0.2)' } : {}) }}
               onFocus={focusHandler}
               onBlur={blurHandler}
             />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+              <span style={{ fontSize: '12px', color: '#DC2626' }}>{nicknameError}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{nickname.length}/10</span>
+            </div>
           </div>
           <button
             onClick={() => setStep(2)}
@@ -424,11 +444,16 @@ export default function ProfileSetupPage() {
               type="text"
               placeholder="닉네임"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              style={inputStyle}
+              onChange={(e) => { if (e.target.value.length <= 10) { setNickname(e.target.value); setNicknameError(''); } }}
+              maxLength={10}
+              style={{ ...inputStyle, ...(nicknameError ? { borderColor: '#DC2626', boxShadow: '0 0 0 2px rgba(220,38,38,0.2)' } : {}) }}
               onFocus={focusHandler}
               onBlur={blurHandler}
             />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+              <span style={{ fontSize: '12px', color: '#DC2626' }}>{nicknameError}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{nickname.length}/10</span>
+            </div>
           </div>
 
           <div>

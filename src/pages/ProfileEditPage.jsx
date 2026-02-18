@@ -22,6 +22,7 @@ export default function ProfileEditPage() {
   const [bio, setBio] = useState("");
 
   const [customBadge, setCustomBadge] = useState("");
+  const [nicknameError, setNicknameError] = useState("");
 
   const [customTagInput, setCustomTagInput] = useState("");
   const [showPremiumModal, setShowPremiumModal] = useState(false);
@@ -121,6 +122,19 @@ export default function ProfileEditPage() {
       alert("닉네임과 선호 게임은 필수입니다!");
       return;
     }
+
+    // 닉네임 중복 체크 (본인 제외)
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('nickname', nickname.trim())
+      .neq('id', user.id)
+      .maybeSingle();
+    if (existing) {
+      setNicknameError('이미 사용 중인 닉네임입니다.');
+      return;
+    }
+    setNicknameError('');
 
     try {
       const profileData = {
@@ -312,11 +326,16 @@ export default function ProfileEditPage() {
           <input
             type="text"
             value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            style={inputStyle}
+            onChange={(e) => { if (e.target.value.length <= 10) { setNickname(e.target.value); setNicknameError(''); } }}
+            maxLength={10}
+            style={{ ...inputStyle, ...(nicknameError ? { borderColor: '#DC2626', boxShadow: '0 0 0 2px rgba(220,38,38,0.2)' } : {}) }}
             onFocus={focusHandler}
             onBlur={blurHandler}
           />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#DC2626' }}>{nicknameError}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{nickname.length}/10</span>
+          </div>
         </div>
 
         {/* 커스텀 뱃지 (프리미엄 전용) */}

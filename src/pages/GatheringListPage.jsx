@@ -85,7 +85,7 @@ export default function GatheringListPage() {
         // 호스트 정보
         const { data: host } = await supabase
           .from('profiles')
-          .select('nickname, email, is_premium')
+          .select('nickname, email, is_premium, custom_badge')
           .eq('id', gathering.creator_id)
           .single();
 
@@ -226,7 +226,7 @@ export default function GatheringListPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  width: '100%', padding: '18px 16px 18px 50px',
+                  width: '100%', padding: '18px 48px 18px 50px',
                   borderRadius: '14px', border: '1px solid rgba(0,0,0,0.08)',
                   background: '#FFFFFF', fontSize: '17px',
                   color: 'var(--text-primary)', outline: 'none',
@@ -235,6 +235,19 @@ export default function GatheringListPage() {
                 onFocus={(e) => { e.target.style.boxShadow = '0 0 0 2px var(--button-primary)'; e.target.style.borderColor = 'transparent'; }}
                 onBlur={(e) => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = 'rgba(255,255,255,0.3)'; }}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                    background: 'rgba(0,0,0,0.12)', border: 'none', borderRadius: '50%',
+                    width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', padding: 0, outline: 'none', color: '#666', fontSize: '14px', lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              )}
             </div>
             <button
               onClick={handleAIRecommend}
@@ -277,7 +290,7 @@ export default function GatheringListPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  width: '100%', padding: '14px 16px 14px 44px',
+                  width: '100%', padding: '14px 44px 14px 44px',
                   borderRadius: '14px', border: '1px solid rgba(0,0,0,0.08)',
                   background: '#FFFFFF', fontSize: '15px',
                   color: 'var(--text-primary)', outline: 'none',
@@ -286,6 +299,19 @@ export default function GatheringListPage() {
                 onFocus={(e) => { e.target.style.boxShadow = '0 0 0 2px var(--button-primary)'; e.target.style.borderColor = 'transparent'; }}
                 onBlur={(e) => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = 'rgba(255,255,255,0.3)'; }}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                    background: 'rgba(0,0,0,0.12)', border: 'none', borderRadius: '50%',
+                    width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', padding: 0, outline: 'none', color: '#666', fontSize: '13px', lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              )}
             </div>
             <button
               onClick={handleAIRecommend}
@@ -463,8 +489,25 @@ export default function GatheringListPage() {
                   fontSize: isMobile ? '15px' : '13px',
                   color: 'var(--text-muted)',
                   marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  flexWrap: 'wrap',
                 }}>
-                  모임장: {gathering.host?.nickname || '익명'} | {gathering.members?.[0]?.count || 0}명
+                  <span>모임장: {gathering.host?.nickname || '익명'}</span>
+                  {gathering.host?.is_premium && gathering.host?.custom_badge && (
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500',
+                      backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                      color: 'var(--button-primary)',
+                    }}>
+                      {gathering.host.custom_badge}
+                    </span>
+                  )}
+                  <span>| {gathering.members?.[0]?.count || 0}명</span>
                 </div>
 
                 {/* 태그 */}
