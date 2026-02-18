@@ -407,7 +407,7 @@ export default function ScheduleDetailPage() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             style={{
-              padding: '12px 20px', background: 'none', border: 'none',
+              padding: isMobile ? '4px 20px' : '12px 20px', background: 'none', border: 'none',
               borderBottom: activeTab === tab.key ? '3px solid var(--button-primary)' : '3px solid transparent',
               color: activeTab === tab.key ? 'var(--button-primary)' : 'var(--text-muted)',
               fontWeight: activeTab === tab.key ? '600' : '400',
