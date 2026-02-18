@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function ManageGatheringPage() {
   const { id } = useParams();
@@ -8,6 +9,7 @@ export default function ManageGatheringPage() {
   const [user, setUser] = useState(null);
   const [gathering, setGathering] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
   const [isEditing, setIsEditing] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -264,7 +266,17 @@ export default function ManageGatheringPage() {
   if (!gathering) return null;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{
+      maxWidth: '800px',
+      margin: '0 auto',
+      padding: isMobile ? '16px 12px' : '32px 24px',
+      ...(isMobile ? {
+        width: '90%',
+        background: '#FFFFFF',
+        borderRadius: '16px',
+        minHeight: '100%',
+      } : {})
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <button
           onClick={() => navigate(`/gatherings/${id}`)}
