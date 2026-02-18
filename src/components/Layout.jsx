@@ -118,16 +118,21 @@ export default function Layout({ children }) {
           {children}
         </div>
 
-        {/* 탭바: flexbox의 하단 고정 영역 (position:fixed 사용 안 함) */}
-        <div className="bottom-tab-bar" style={{
-          flexShrink: 0,
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          padding: '8px 0',
-          background: '#FFFFFF',
-          borderTop: '1px solid rgba(0,0,0,0.08)',
-        }}>
+        {/* 탭바: flexbox의 하단 고정 영역 */}
+        <div
+          className="bottom-tab-bar"
+          onTouchMove={(e) => e.preventDefault()}
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            padding: '8px 0',
+            background: '#FFFFFF',
+            borderTop: '1px solid rgba(0,0,0,0.08)',
+            touchAction: 'none',
+          }}
+        >
           {mobileTabItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.path)
