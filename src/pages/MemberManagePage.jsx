@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function MemberManagePage() {
   const { id } = useParams();
@@ -11,6 +12,7 @@ export default function MemberManagePage() {
   const [pendingApplicants, setPendingApplicants] = useState([]);
   const [activeTab, setActiveTab] = useState('members');
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -210,7 +212,16 @@ export default function MemberManagePage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{
+      maxWidth: '800px',
+      margin: '0 auto',
+      padding: isMobile ? '16px 12px' : '32px 24px',
+      ...(isMobile ? {
+        background: '#FFFFFF',
+        borderRadius: '16px',
+        minHeight: '100%',
+      } : {})
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <button
           onClick={() => navigate(`/gatherings/${id}`)}
