@@ -90,14 +90,12 @@ export default function ScheduleDetailPage() {
     }
   }, [chatLoading, activeTab]);
 
-  // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
+  // 새 메시지 도착 시 채팅창 최하단 자동 스크롤 (모바일/데스크탑 공통)
   useEffect(() => {
-    if (isMobile) {
-      requestAnimationFrame(() => {
-        const container = messagesContainerRef.current;
-        if (container) container.scrollTop = container.scrollHeight;
-      });
-    }
+    requestAnimationFrame(() => {
+      const container = messagesContainerRef.current;
+      if (container) container.scrollTop = container.scrollHeight;
+    });
   }, [messages]);
 
   const fetchAll = async () => {
