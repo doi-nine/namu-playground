@@ -412,7 +412,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                                 width: '18px',
                                 height: '18px',
                                 borderRadius: '50%',
-                                backgroundColor: summaryLeft > 0 ? 'var(--button-primary)' : 'var(--danger)',
+                                backgroundColor: 'var(--button-primary)',
                                 color: '#FFFFFF',
                                 fontSize: '10px',
                                 fontWeight: '700',

@@ -724,7 +724,7 @@ export default function ScheduleDetailPage() {
                         width: '18px',
                         height: '18px',
                         borderRadius: '50%',
-                        backgroundColor: (summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3)) > 0 ? 'var(--button-primary)' : 'var(--danger)',
+                        backgroundColor: 'var(--button-primary)',
                         color: '#FFFFFF',
                         fontSize: '10px',
                         fontWeight: '700',
