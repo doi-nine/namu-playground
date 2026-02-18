@@ -230,6 +230,28 @@ export default function ScheduleDetailPage() {
     }
   };
 
+  const handleDeleteSchedule = async () => {
+    if (!confirm('일정을 취소하시겠습니까? 참여 멤버에게 알림이 전송됩니다.')) return;
+    try {
+      // 참여 멤버들에게 일정 취소 알림 전송 (생성자 제외)
+      const otherMembers = members.filter(m => m.user_id !== currentUser.id);
+      if (otherMembers.length > 0) {
+        await supabase.from('notifications').insert(
+          otherMembers.map(m => ({
+            user_id: m.user_id,
+            type: 'schedule_cancelled',
+            gathering_id: schedule.gathering_id,
+            related_user_id: currentUser.id,
+          }))
+        );
+      }
+      await supabase.from('schedules').delete().eq('id', scheduleId);
+      navigate(`/gatherings/${id}`, { state: { tab: 'schedules' } });
+    } catch (err) {
+      alert('일정 취소 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
   const handleSummarize = async () => {
     if (messages.length === 0) {
       alert('요약할 메시지가 없습니다.');
@@ -568,6 +590,20 @@ export default function ScheduleDetailPage() {
                 </button>
               )}
             </div>
+          )}
+
+          {isScheduleCreator && !schedule.is_completed && (
+            <button
+              onClick={handleDeleteSchedule}
+              style={{
+                width: '100%', padding: '12px 0',
+                backgroundColor: 'rgba(239,68,68,0.08)', color: '#EF4444',
+                borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)',
+                cursor: 'pointer', fontWeight: '600', fontSize: '14px',
+              }}
+            >
+              일정 취소
+            </button>
           )}
 
           {canEval && (

@@ -84,6 +84,25 @@ export default function CreateSchedulePage() {
         .from('schedule_members')
         .insert([{ schedule_id: newSchedule.id, user_id: user.id, status: 'approved' }]);
 
+      // 모임 승인 멤버들에게 일정 생성 알림 전송 (생성자 제외)
+      const { data: gatheringMembers } = await supabase
+        .from('gathering_members')
+        .select('user_id')
+        .eq('gathering_id', id)
+        .eq('status', 'approved')
+        .neq('user_id', user.id);
+
+      if (gatheringMembers && gatheringMembers.length > 0) {
+        await supabase.from('notifications').insert(
+          gatheringMembers.map(m => ({
+            user_id: m.user_id,
+            type: 'schedule_created',
+            gathering_id: id,
+            related_user_id: user.id,
+          }))
+        );
+      }
+
       navigate(`/gatherings/${id}`, { state: { tab: 'schedules' } });
     } catch (err) {
       console.error('일정 생성 오류:', err);
