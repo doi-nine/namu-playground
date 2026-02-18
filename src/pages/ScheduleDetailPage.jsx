@@ -558,17 +558,6 @@ export default function ScheduleDetailPage() {
                       {member.user_id === currentUser?.id ? (
                         <>
                           <button
-                            onClick={(e) => handleAttendanceStatus(e, 'confirmed')}
-                            style={{
-                              padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
-                              border: '1.5px solid',
-                              borderColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'rgba(0,0,0,0.12)',
-                              backgroundColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'transparent',
-                              color: member.attendance_status === 'confirmed' ? '#fff' : 'var(--text-muted)',
-                              cursor: 'pointer', transition: 'all 0.15s',
-                            }}
-                          >확정</button>
-                          <button
                             onClick={(e) => handleAttendanceStatus(e, 'pending')}
                             style={{
                               padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
@@ -579,6 +568,17 @@ export default function ScheduleDetailPage() {
                               cursor: 'pointer', transition: 'all 0.15s',
                             }}
                           >보류</button>
+                          <button
+                            onClick={(e) => handleAttendanceStatus(e, 'confirmed')}
+                            style={{
+                              padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                              border: '1.5px solid',
+                              borderColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'rgba(0,0,0,0.12)',
+                              backgroundColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'transparent',
+                              color: member.attendance_status === 'confirmed' ? '#fff' : 'var(--text-muted)',
+                              cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                          >확정</button>
                         </>
                       ) : (
                         <span style={{
