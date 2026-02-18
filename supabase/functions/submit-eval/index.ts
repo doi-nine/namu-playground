@@ -82,12 +82,12 @@ serve(async (req) => {
         switch (vote.vote_type) {
           case 'thumbs_up': total_score += 1; break
           case 'thumbs_down': total_score -= 1; break
-          case 'kind': kind_count += 1; total_score += 1; break
-          case 'friendly': friendly_count += 1; total_score += 1; break
-          case 'punctual': punctual_count += 1; total_score += 1; break
-          case 'cheerful': cheerful_count += 1; total_score += 1; break
-          case 'active': active_count += 1; total_score += 1; break
-          case 'vibe_maker': vibe_maker_count += 1; total_score += 1; break
+          case 'kind': kind_count += 1; break
+          case 'friendly': friendly_count += 1; break
+          case 'punctual': punctual_count += 1; break
+          case 'cheerful': cheerful_count += 1; break
+          case 'active': active_count += 1; break
+          case 'vibe_maker': vibe_maker_count += 1; break
         }
       }
 

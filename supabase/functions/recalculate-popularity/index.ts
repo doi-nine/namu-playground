@@ -53,27 +53,21 @@ serve(async (req) => {
             break
           case 'kind':
             kind_count += 1
-            total_score += 1
             break
           case 'friendly':
             friendly_count += 1
-            total_score += 1
             break
           case 'punctual':
             punctual_count += 1
-            total_score += 1
             break
           case 'cheerful':
             cheerful_count += 1
-            total_score += 1
             break
           case 'active':
             active_count += 1
-            total_score += 1
             break
           case 'vibe_maker':
             vibe_maker_count += 1
-            total_score += 1
             break
         }
       }
