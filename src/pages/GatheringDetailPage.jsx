@@ -1460,11 +1460,19 @@ export default function GatheringDetailPage() {
         )}
 
         {activeTab === 'chat' && (
-          <ChatTab
-            gatheringId={id}
-            memberStatus={memberStatus}
-            isCreator={gathering?.creator_id === currentUser?.id}
-          />
+          !isApprovedMember ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+              <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>모임에 가입하면 대화에 참여할 수 있습니다.</p>
+            </div>
+          ) : (
+            <ChatTab
+              gatheringId={id}
+              memberStatus={memberStatus}
+              isCreator={gathering?.creator_id === currentUser?.id}
+            />
+          )
         )}
 
         {activeTab === 'tools' && (
