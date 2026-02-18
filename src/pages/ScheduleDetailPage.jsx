@@ -342,6 +342,35 @@ export default function ScheduleDetailPage() {
     );
   }
 
+  if (!gatheringMembership) {
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+        <p style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '16px', marginBottom: '8px' }}>
+          접근할 수 없는 일정입니다
+        </p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+          모임 멤버만 일정에 접근할 수 있습니다.
+        </p>
+        <button
+          onClick={() => navigate(`/gatherings/${id}`)}
+          style={{
+            padding: '10px 24px',
+            backgroundColor: 'var(--button-primary)',
+            color: '#FFFFFF',
+            borderRadius: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '14px',
+          }}
+        >
+          모임으로 돌아가기
+        </button>
+      </div>
+    );
+  }
+
   const isScheduleCreator = currentUser && schedule.created_by === currentUser.id;
   const isApprovedGatheringMember = gatheringMembership?.status === 'approved' || isScheduleCreator;
   const isFull = schedule.current_members >= schedule.max_members;
