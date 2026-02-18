@@ -63,6 +63,13 @@ input, textarea, select, button {
   font-family: inherit;
 }
 
+/* iOS 입력란 자동 줌인 방지 (font-size 16px 미만일 때 줌인됨) */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 /* 기본 버튼 border 초기화 */
 button {
   border-color: transparent;
