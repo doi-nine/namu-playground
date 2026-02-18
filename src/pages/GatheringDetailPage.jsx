@@ -864,52 +864,65 @@ export default function GatheringDetailPage() {
                 )}
 
                 {/* 일반 참가자 (모임장 제외) */}
-                {members.filter(m => m.user_id !== gathering.creator_id).map((member) => (
-                  <div
-                    key={member.id}
-                    onClick={() => navigate(`/users/${member.user_id}`)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '12px 16px',
-                      backgroundColor: 'rgba(0,0,0,0.03)',
-                      borderRadius: '10px',
-                      transition: 'background-color 0.2s',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)'}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{member.profiles?.nickname || '익명'}</span>
-                      {member.profiles?.custom_badge && (
+                {isApprovedMember ? (
+                  members.filter(m => m.user_id !== gathering.creator_id).map((member) => (
+                    <div
+                      key={member.id}
+                      onClick={() => navigate(`/users/${member.user_id}`)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(0,0,0,0.03)',
+                        borderRadius: '10px',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{member.profiles?.nickname || '익명'}</span>
+                        {member.profiles?.custom_badge && (
+                          <span style={{
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '500',
+                            backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                            color: 'var(--button-primary)',
+                          }}>
+                            {member.profiles.custom_badge}
+                          </span>
+                        )}
+                      </div>
+
+                      {(profile?.is_premium || currentUser?.id === member.user_id) && member.popularity_score !== undefined && (
                         <span style={{
-                          padding: '1px 6px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          fontWeight: '500',
-                          backgroundColor: 'rgba(107, 144, 128, 0.15)',
-                          color: 'var(--button-primary)',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          color: member.popularity_score >= 0 ? '#16A34A' : 'var(--danger)'
                         }}>
-                          {member.profiles.custom_badge}
+                          ⭐ {member.popularity_score >= 0 ? '+' : ''}{member.popularity_score}
                         </span>
                       )}
                     </div>
-
-                    {(profile?.is_premium || currentUser?.id === member.user_id) && member.popularity_score !== undefined && (
-                      <span style={{
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        color: member.popularity_score >= 0 ? '#16A34A' : 'var(--danger)'
-                      }}>
-                        ⭐ {member.popularity_score >= 0 ? '+' : ''}{member.popularity_score}
-                      </span>
-                    )}
+                  ))
+                ) : (
+                  <div style={{
+                    padding: '16px',
+                    backgroundColor: 'rgba(0,0,0,0.03)',
+                    borderRadius: '10px',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: '14px',
+                  }}>
+                    🔒 가입 후 멤버 목록을 확인할 수 있습니다.
                   </div>
-                ))}
+                )}
 
-                {members.length === 0 && !creator && (
+                {isApprovedMember && members.length === 0 && !creator && (
                   <p style={{ color: 'var(--text-muted)' }}>아직 참가자가 없습니다.</p>
                 )}
               </div>
@@ -1098,7 +1111,13 @@ export default function GatheringDetailPage() {
         {/* ─── 공지 탭 ─── */}
         {activeTab === 'notices' && (
           <div>
-            {isCreator && (
+            {!isApprovedMember ? (
+              <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+                <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>모임에 가입하면 공지를 확인할 수 있습니다.</p>
+              </div>
+            ) : (<>{isCreator && (
               <div style={{ marginBottom: '16px' }}>
                 {!showNoticeForm ? (
                   <button
@@ -1251,13 +1270,20 @@ export default function GatheringDetailPage() {
                 ))}
               </div>
             )}
+            </>)}
           </div>
         )}
 
         {/* ─── 일정 탭 ─── */}
         {activeTab === 'schedules' && (
           <div>
-            {isApprovedMember && (
+            {!isApprovedMember ? (
+              <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+                <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>모임에 가입하면 일정을 확인할 수 있습니다.</p>
+              </div>
+            ) : (<>{isApprovedMember && (
               <div style={{ marginBottom: '16px' }}>
                 <button
                   onClick={() => navigate(`/gatherings/${id}/schedules/create`)}
@@ -1429,6 +1455,7 @@ export default function GatheringDetailPage() {
                 })}
               </div>
             )}
+            </>)}
           </div>
         )}
 
