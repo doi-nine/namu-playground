@@ -261,7 +261,7 @@ export default function ProfileEditPage() {
             gap: '12px'
           }}>
             <textarea
-              placeholder="예) 20대 후반 직장인이고, 주말에 보드게임이나 방탈출 좋아합니다."
+              placeholder="예) 20대 후반 직장인. 주말반. 보드게임 방탈출 좋아함"
               value={aiInput}
               onChange={(e) => setAiInput(e.target.value)}
               style={{
