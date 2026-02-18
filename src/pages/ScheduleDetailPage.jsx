@@ -614,7 +614,9 @@ export default function ScheduleDetailPage() {
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder="메시지를 입력하세요..."
                   style={{
-                    flex: 1, padding: isMobile ? '9px 12px' : '12px 16px',
+                    flex: isMobile ? '0 1 auto' : 1,
+                    minWidth: isMobile ? '140px' : 'auto',
+                    padding: isMobile ? '9px 12px' : '12px 16px',
                     background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)',
                     borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
                   }}
