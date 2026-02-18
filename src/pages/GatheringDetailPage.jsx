@@ -302,14 +302,41 @@ export default function GatheringDetailPage() {
     if (!confirm('정말 참가를 취소하시겠습니까?')) return;
     try {
       // 1. 현재 모임의 모든 일정에서 사용자 탈퇴 처리
-      const { data: schedules } = await supabase
+      const { data: gatheringSchedules } = await supabase
         .from('schedules')
-        .select('id, current_members')
+        .select('id, current_members, created_by')
         .eq('gathering_id', id);
 
-      if (schedules && schedules.length > 0) {
-        for (const schedule of schedules) {
-          // 해당 일정의 schedule_members에서 사용자 삭제
+      if (gatheringSchedules && gatheringSchedules.length > 0) {
+        for (const schedule of gatheringSchedules) {
+          // 해당 일정에 실제로 참여했는지 확인
+          const { data: myScheduleMembership } = await supabase
+            .from('schedule_members')
+            .select('user_id')
+            .eq('schedule_id', schedule.id)
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+
+          if (!myScheduleMembership) continue; // 참여하지 않은 일정은 건너뜀
+
+          // 탈퇴자가 일정 모집장인 경우 다른 멤버에게 자동 양도
+          if (schedule.created_by === currentUser.id) {
+            const { data: otherMembers } = await supabase
+              .from('schedule_members')
+              .select('user_id')
+              .eq('schedule_id', schedule.id)
+              .neq('user_id', currentUser.id)
+              .limit(1);
+
+            if (otherMembers && otherMembers.length > 0) {
+              await supabase
+                .from('schedules')
+                .update({ created_by: otherMembers[0].user_id })
+                .eq('id', schedule.id);
+            }
+          }
+
+          // schedule_members에서 사용자 삭제
           await supabase
             .from('schedule_members')
             .delete()

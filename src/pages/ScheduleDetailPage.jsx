@@ -188,6 +188,16 @@ export default function ScheduleDetailPage() {
   const handleLeave = async () => {
     if (!confirm('일정 참여를 취소하시겠습니까?')) return;
     try {
+      // 탈퇴자가 모집장인 경우 다른 멤버에게 자동 양도
+      if (schedule.created_by === currentUser.id) {
+        const others = members.filter(m => m.user_id !== currentUser.id);
+        if (others.length > 0) {
+          await supabase.from('schedules')
+            .update({ created_by: others[0].user_id })
+            .eq('id', scheduleId);
+        }
+      }
+
       await supabase.from('schedule_members').delete().eq('schedule_id', scheduleId).eq('user_id', currentUser.id);
       await supabase.from('schedules').update({ current_members: Math.max(0, schedule.current_members - 1) }).eq('id', scheduleId);
       setSchedule(prev => ({ ...prev, current_members: Math.max(0, prev.current_members - 1) }));
