@@ -548,8 +548,10 @@ export default function ProfileSetupPage() {
               >
                 <option value="">연령대 선택</option>
                 <option value="20대 초반">20대 초반</option>
+                <option value="20대 중반">20대 중반</option>
                 <option value="20대 후반">20대 후반</option>
                 <option value="30대 초반">30대 초반</option>
+                <option value="30대 중반">30대 중반</option>
                 <option value="30대 후반">30대 후반</option>
                 <option value="40대+">40대+</option>
               </select>
