@@ -42,7 +42,12 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
 
     // 초기 로드 완료 시 최하단으로 즉시 스크롤 (모바일/데스크탑 공통)
     useEffect(() => {
-        if (!loading) { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }
+        if (!loading) {
+            requestAnimationFrame(() => {
+                const container = messagesContainerRef.current;
+                if (container) container.scrollTop = container.scrollHeight;
+            });
+        }
     }, [loading]);
 
     // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
