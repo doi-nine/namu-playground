@@ -6,7 +6,7 @@ import { Star } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [profile, setProfile] = useState(null);
@@ -306,6 +306,48 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* 모바일 하단 버튼 */}
+      {isMobile && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '24px', padding: '0 4px 24px' }}>
+          <button
+            onClick={() => navigate('/premium')}
+            style={{
+              width: '100%', padding: '14px',
+              background: 'var(--button-primary)', color: '#FFFFFF',
+              borderRadius: '12px', border: 'none',
+              fontSize: '15px', fontWeight: '600', cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            요금제 업그레이드
+          </button>
+          <button
+            onClick={() => navigate('/support')}
+            style={{
+              width: '100%', padding: '14px',
+              background: '#FFFFFF', color: 'var(--text-primary)',
+              borderRadius: '12px', border: '1.5px solid rgba(0,0,0,0.1)',
+              fontSize: '15px', fontWeight: '500', cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            고객센터
+          </button>
+          <button
+            onClick={signOut}
+            style={{
+              width: '100%', padding: '14px',
+              background: 'transparent', color: 'var(--text-muted)',
+              borderRadius: '12px', border: '1.5px solid rgba(0,0,0,0.08)',
+              fontSize: '15px', fontWeight: '500', cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            로그아웃
+          </button>
+        </div>
+      )}
     </div>
   );
 }
