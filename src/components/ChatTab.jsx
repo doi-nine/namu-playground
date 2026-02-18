@@ -317,115 +317,119 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
             </div>
 
             {/* 입력 필드 */}
-            <div className="glass" style={{
-                display: 'flex',
-                gap: isMobile ? '4px' : '8px',
-                padding: isMobile ? '10px 12px' : '16px',
-                borderRadius: '14px',
-                position: 'sticky',
-                bottom: 0
-            }}>
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="메시지를 입력하세요..."
-                    style={{
-                        flex: isMobile ? '0 1 auto' : 1,
-                        minWidth: isMobile ? '140px' : 'auto',
-                        padding: isMobile ? '9px 12px' : '12px 16px',
-                        background: 'rgba(255,255,255,0.5)',
-                        border: '1px solid rgba(0,0,0,0.06)',
-                        borderRadius: '10px',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px',
-                        outline: 'none'
-                    }}
-                />
-                <button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim()}
-                    style={{
-                        padding: isMobile ? '9px 14px' : '12px 24px',
-                        background: newMessage.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
-                        color: newMessage.trim() ? '#FFFFFF' : 'var(--text-muted)',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontWeight: '600',
-                        cursor: newMessage.trim() ? 'pointer' : 'not-allowed',
-                        fontSize: isMobile ? '12px' : '14px',
-                        transition: 'all 0.2s',
-                        whiteSpace: 'nowrap'
-                    }}
-                >
-                    {isMobile ? '전' : '전송'}
-                </button>
-                <button
-                    onClick={handleSummarize}
-                    disabled={summaryLoading || messages.length === 0}
-                    title={isPremium ? 'AI 대화 요약' : `AI 대화 요약 (잔여 ${summaryLeft}회)`}
-                    style={{
-                        padding: isMobile ? '9px 12px' : '12px 16px',
-                        background: '#FFFFFF',
-                        color: summaryLoading || messages.length === 0 ? 'var(--text-muted)' : 'var(--button-primary)',
-                        border: summaryLoading || messages.length === 0 ? '1.5px solid rgba(0,0,0,0.12)' : '1.5px solid var(--button-primary)',
-                        borderRadius: '10px',
-                        fontWeight: '600',
-                        cursor: summaryLoading || messages.length === 0 ? 'not-allowed' : 'pointer',
-                        fontSize: isMobile ? '12px' : '14px',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: isMobile ? '3px' : '6px',
-                        whiteSpace: 'nowrap',
-                        position: 'relative',
-                    }}
-                >
-                    {summaryLoading ? (
-                        <>
-                            <div style={{
-                                width: '12px', height: '12px',
-                                border: '2px solid rgba(107,144,128,0.2)',
-                                borderTop: '2px solid var(--button-primary)',
-                                borderRadius: '50%',
-                                animation: 'spin 0.8s linear infinite'
-                            }} />
-                            {!isMobile && '요약 중'}
-                        </>
-                    ) : (
-                        <>
-                            <svg width={isMobile ? '14' : '16'} height={isMobile ? '14' : '16'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="16" y1="13" x2="8" y2="13" />
-                                <line x1="16" y1="17" x2="8" y2="17" />
-                            </svg>
-                            {!isMobile && '요약'}
-                        </>
-                    )}
-                    {/* 무료 유저 잔여 횟수 배지 */}
-                    {!isPremium && !summaryLoading && (
-                        <span style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            right: '-8px',
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: '50%',
-                            backgroundColor: summaryLeft > 0 ? 'var(--button-primary)' : 'var(--danger)',
-                            color: '#FFFFFF',
-                            fontSize: '10px',
-                            fontWeight: '700',
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="glass" style={{
+                    display: 'flex',
+                    gap: isMobile ? '4px' : '8px',
+                    padding: isMobile ? '10px 12px' : '16px',
+                    borderRadius: '14px',
+                    position: 'sticky',
+                    bottom: 0
+                }}>
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                        placeholder="메시지를 입력하세요..."
+                        style={{
+                            flex: isMobile ? '0 1 auto' : 1,
+                            minWidth: isMobile ? '140px' : 'auto',
+                            padding: isMobile ? '9px 12px' : '12px 16px',
+                            background: 'rgba(255,255,255,0.5)',
+                            border: '1px solid rgba(0,0,0,0.06)',
+                            borderRadius: '10px',
+                            color: 'var(--text-primary)',
+                            fontSize: '14px',
+                            outline: 'none'
+                        }}
+                    />
+                    <button
+                        onClick={sendMessage}
+                        disabled={!newMessage.trim()}
+                        style={{
+                            padding: isMobile ? '9px 14px' : '12px 24px',
+                            background: newMessage.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
+                            color: newMessage.trim() ? '#FFFFFF' : 'var(--text-muted)',
+                            border: 'none',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            cursor: newMessage.trim() ? 'pointer' : 'not-allowed',
+                            fontSize: isMobile ? '12px' : '14px',
+                            transition: 'all 0.2s',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {isMobile ? '전' : '전송'}
+                    </button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: isMobile ? '12px' : '0' }}>
+                    <button
+                        onClick={handleSummarize}
+                        disabled={summaryLoading || messages.length === 0}
+                        title={isPremium ? 'AI 대화 요약' : `AI 대화 요약 (잔여 ${summaryLeft}회)`}
+                        style={{
+                            padding: isMobile ? '9px 12px' : '12px 16px',
+                            background: '#FFFFFF',
+                            color: summaryLoading || messages.length === 0 ? 'var(--text-muted)' : 'var(--button-primary)',
+                            border: summaryLoading || messages.length === 0 ? '1.5px solid rgba(0,0,0,0.12)' : '1.5px solid var(--button-primary)',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            cursor: summaryLoading || messages.length === 0 ? 'not-allowed' : 'pointer',
+                            fontSize: isMobile ? '12px' : '14px',
+                            transition: 'all 0.2s',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '2px solid white',
-                        }}>
-                            {summaryLeft}
-                        </span>
-                    )}
-                </button>
+                            gap: isMobile ? '3px' : '6px',
+                            whiteSpace: 'nowrap',
+                            position: 'relative',
+                        }}
+                    >
+                        {summaryLoading ? (
+                            <>
+                                <div style={{
+                                    width: '12px', height: '12px',
+                                    border: '2px solid rgba(107,144,128,0.2)',
+                                    borderTop: '2px solid var(--button-primary)',
+                                    borderRadius: '50%',
+                                    animation: 'spin 0.8s linear infinite'
+                                }} />
+                                {!isMobile && '요약 중'}
+                            </>
+                        ) : (
+                            <>
+                                <svg width={isMobile ? '14' : '16'} height={isMobile ? '14' : '16'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                </svg>
+                                {!isMobile && '요약'}
+                            </>
+                        )}
+                        {/* 무료 유저 잔여 횟수 배지 */}
+                        {!isPremium && !summaryLoading && (
+                            <span style={{
+                                position: 'absolute',
+                                top: '-8px',
+                                right: '-8px',
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '50%',
+                                backgroundColor: summaryLeft > 0 ? 'var(--button-primary)' : 'var(--danger)',
+                                color: '#FFFFFF',
+                                fontSize: '10px',
+                                fontWeight: '700',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: '2px solid white',
+                            }}>
+                                {summaryLeft}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* 요약 모달 */}
