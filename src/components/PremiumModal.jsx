@@ -86,15 +86,14 @@ export default function PremiumModal({ isOpen, onClose }) {
                     ✕
                 </button>
 
-                <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '10px' }}>🌳</div>
-                    <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px', color: 'var(--text-primary)' }}>
+                <div style={{ textAlign: 'center', marginBottom: '14px', paddingTop: '4px' }}>
+                    <h2 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>
                         더 많은 놀이 추천을 받고 싶다면?
                     </h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>프리미엄으로 더 많은 혜택을 누려보세요</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>프리미엄으로 더 많은 혜택을 누려보세요</p>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
                     {[
                         { emoji: '✨', title: 'AI 전 기능 무제한', desc: '추천, 채팅 요약, 글쓰기 보조 모두 무제한' },
                         { emoji: '❤️', title: '매너도 확인 무제한', desc: '멤버들의 매너도를 자유롭게 확인하세요' },
@@ -104,16 +103,16 @@ export default function PremiumModal({ isOpen, onClose }) {
                     ].map((item, i) => (
                         <div key={i} style={{
                             display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '10px',
-                            padding: '10px',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 10px',
                             backgroundColor: 'rgba(255,255,255,0.5)',
                             borderRadius: '10px'
                         }}>
-                            <span style={{ fontSize: '20px' }}>{item.emoji}</span>
+                            <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.emoji}</span>
                             <div>
-                                <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '13px' }}>{item.title}</div>
-                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.desc}</div>
+                                <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '12px' }}>{item.title}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.desc}</div>
                             </div>
                         </div>
                     ))}
@@ -122,13 +121,13 @@ export default function PremiumModal({ isOpen, onClose }) {
                 <div style={{
                     backgroundColor: 'var(--button-primary)',
                     color: 'white',
-                    padding: '12px',
+                    padding: '10px',
                     borderRadius: '12px',
                     textAlign: 'center',
-                    marginBottom: '14px'
+                    marginBottom: '12px'
                 }}>
-                    <div style={{ fontSize: '20px', fontWeight: '700', marginBottom: '2px' }}>$3/월</div>
-                    <div style={{ fontSize: '12px', opacity: 0.9 }}>약 4,300원, 커피 한 잔 값</div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', marginBottom: '1px' }}>$3/월</div>
+                    <div style={{ fontSize: '11px', opacity: 0.9 }}>약 4,300원, 커피 한 잔 값</div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
