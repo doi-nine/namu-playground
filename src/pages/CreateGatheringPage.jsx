@@ -376,7 +376,7 @@ export default function CreateGatheringPage() {
                                 <button onClick={() => setApprovalRequired(true)} style={segmentBtnStyle(approvalRequired)}>승인제</button>
                             </div>
                             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                                {approvalRequired ? '참가 신청 시 내가 확인 후 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
+                                {approvalRequired ? '참가 신청 시 모임장이 직접 확인한 뒤, 신청을 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
                             </p>
                         </div>
                     </div>
@@ -459,7 +459,7 @@ export default function CreateGatheringPage() {
                                     <button onClick={() => setApprovalRequired(true)} style={segmentBtnStyle(approvalRequired)}>승인제</button>
                                 </div>
                                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                    {approvalRequired ? '참가 신청 시 내가 확인 후 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
+                                    {approvalRequired ? '참가 신청 시 모임장이 직접 확인한 뒤, 신청을 수락합니다' : '누구나 자유롭게 참가할 수 있습니다'}
                                 </p>
                             </div>
                         </>
