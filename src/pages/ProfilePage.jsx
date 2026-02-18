@@ -95,7 +95,7 @@ export default function ProfilePage() {
   const bannerHeight = isMobile ? 150 : 300;
   const bannerInnerHeight = isMobile ? 100 : 276;
   const bannerTop = isMobile ? 90 : 250;
-  const bannerLeft = isMobile ? 12 : 32;
+  const bannerLeft = isMobile ? 12 : 8;
 
   return (
     <div style={{ position: 'relative', paddingTop: `${bannerHeight}px`, ...(isMobile ? { width: '93%', margin: '0 auto' } : {}) }}>
