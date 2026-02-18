@@ -12,31 +12,45 @@ serve(async (req) => {
   }
 
   try {
-    const { profile, gatherings, userId } = await req.json()
+    const { profile, userId } = await req.json()
 
-    if (!profile || !gatherings || gatherings.length === 0) {
+    if (!profile || !userId) {
       return new Response(
         JSON.stringify({ recommendations: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 서비스 키로 DB 접근하여 가입한 모임 필터링 (RLS 우회)
-    let filteredGatherings = gatherings
-    if (userId) {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
-      const { data: joined } = await supabase
-        .from('gathering_members')
-        .select('gathering_id')
-        .eq('user_id', userId)
-      const joinedIds = new Set((joined || []).map((m: any) => m.gathering_id))
-      filteredGatherings = gatherings.filter((g: any) => !joinedIds.has(g.id))
-    }
+    // 서비스 키로 DB 직접 접근 (RLS 우회)
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    if (filteredGatherings.length === 0) {
+    // 1) 내가 가입한 모임 ID 조회
+    const { data: joined } = await supabase
+      .from('gathering_members')
+      .select('gathering_id')
+      .eq('user_id', userId)
+    const joinedIds = new Set((joined || []).map((m: any) => m.gathering_id))
+
+    // 2) 미래 모임 조회 (내가 만든 모임 제외)
+    const { data: allGatherings, error: gatheringsError } = await supabase
+      .from('gatherings')
+      .select('*')
+      .gte('datetime', new Date().toISOString())
+      .neq('creator_id', userId)
+      .order('datetime', { ascending: true })
+      .limit(50)
+
+    if (gatheringsError) throw gatheringsError
+
+    // 3) 가입한 모임 + 정원 초과 제외
+    const available = (allGatherings || []).filter(
+      (g: any) => !joinedIds.has(g.id) && g.current_members < g.max_members
+    ).slice(0, 20)
+
+    if (available.length === 0) {
       return new Response(
         JSON.stringify({ recommendations: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -55,7 +69,8 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `게임 모임 추천 전문가. 사용자 프로필을 보고 목록에서 최대 5개를 골라 JSON으로 반환.
+            content: `게임/취미 모임 추천 전문가. 사용자 프로필을 보고 아래 목록에서 추천할 모임을 골라 JSON으로 반환.
+목록은 이미 사용자가 가입하지 않은 모임만 필터링됨. 목록에 모임이 있으면 최소 1개는 반드시 추천하고, 최대 5개까지 추천.
 반드시 목록의 ID만 사용. 응답은 JSON만: {"recommendations":[{"gathering_id":"UUID","reason":"한 문장"}]}`
           },
           {
@@ -63,7 +78,7 @@ serve(async (req) => {
             content: `프로필: 선호=${profile.favorite_game_categories?.join(',') || '없음'}, 지역=${profile.location || '없음'}, 최애=${profile.favorite_game_title || '없음'}, 소개=${profile.bio || '없음'}
 
 모임:
-${filteredGatherings.map((g: any) => `${g.id}|${g.title}|${g.category}|${new Date(g.datetime).toLocaleDateString('ko-KR')}|${g.location || g.online_platform || '미정'}|${g.description?.substring(0, 100) || ''}`).join('\n')}`
+${available.map((g: any) => `${g.id}|${g.title}|${g.category}|${new Date(g.datetime).toLocaleDateString('ko-KR')}|${g.location || g.online_platform || '미정'}|${g.description?.substring(0, 100) || ''}`).join('\n')}`
           }
         ],
         temperature: 0.7,
@@ -84,7 +99,6 @@ ${filteredGatherings.map((g: any) => `${g.id}|${g.title}|${g.category}|${new Dat
     try {
       parsedResponse = JSON.parse(aiResponse)
     } catch {
-      // JSON이 코드 블록 안에 있을 수 있음
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         parsedResponse = JSON.parse(jsonMatch[0])
@@ -94,20 +108,21 @@ ${filteredGatherings.map((g: any) => `${g.id}|${g.title}|${g.category}|${new Dat
     }
 
     // 추천된 모임 ID로 실제 데이터 가져오기
-    const recommendedIds = parsedResponse.recommendations.map((r: any) => r.gathering_id)
-    const recommendationsWithData = parsedResponse.recommendations
+    let recommendationsWithData = (parsedResponse.recommendations || [])
       .map((rec: any) => {
-        const gathering = filteredGatherings.find((g: any) => g.id === rec.gathering_id)
-        if (!gathering) {
-          console.warn(`모임 ID ${rec.gathering_id}를 찾을 수 없습니다`)
-          return null
-        }
-        return {
-          ...gathering,
-          reason: rec.reason
-        }
+        const gathering = available.find((g: any) => g.id === rec.gathering_id)
+        if (!gathering) return null
+        return { ...gathering, reason: rec.reason }
       })
-      .filter(Boolean) // null 제거
+      .filter(Boolean)
+
+    // AI가 빈 추천을 반환했지만 available 모임이 있는 경우 폴백
+    if (recommendationsWithData.length === 0 && available.length > 0) {
+      recommendationsWithData = available.slice(0, 5).map((g: any) => ({
+        ...g,
+        reason: '새로운 사람들과 함께할 수 있는 모임이에요!'
+      }))
+    }
 
     return new Response(
       JSON.stringify({ recommendations: recommendationsWithData }),

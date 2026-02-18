@@ -20,46 +20,10 @@ export default function AIRecommendPage() {
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
         if (!profile) { navigate('/'); return; }
-        fetchGatherings();
+        fetchRecommendations();
     }, [user, profile, navigate]);
 
-    async function fetchGatherings() {
-        try {
-            // 1) 내가 가입한 모임 ID 목록 가져오기
-            const { data: myMemberships } = await supabase
-                .from('gathering_members')
-                .select('gathering_id')
-                .eq('user_id', user.id);
-            const joinedIds = new Set((myMemberships || []).map(m => m.gathering_id));
-
-            // 2) 모임 목록 가져오기 (내가 만든 모임 제외)
-            const { data, error } = await supabase
-                .from('gatherings')
-                .select('*')
-                .gte('datetime', new Date().toISOString())
-                .neq('creator_id', user.id)
-                .order('datetime', { ascending: true })
-                .limit(50);
-
-            if (error) throw error;
-
-            // 3) 가입한 모임 + 정원 초과 제외
-            const available = (data || []).filter(
-                g => !joinedIds.has(g.id) && g.current_members < g.max_members
-            ).slice(0, 30);
-            setGatherings(available);
-            if (available.length > 0) {
-                await generateRecommendations(available);
-            } else {
-                setLoading(false);
-            }
-        } catch (error) {
-            console.error('모임 로드 오류:', error);
-            setLoading(false);
-        }
-    }
-
-    async function generateRecommendations(gatheringsData) {
+    async function fetchRecommendations() {
         if (!profile) { setLoading(false); return; }
         if (!profile.is_premium && profile.ai_recommendations_left <= 0) {
             alert('AI 추천 횟수를 모두 사용했습니다.');
@@ -68,8 +32,9 @@ export default function AIRecommendPage() {
         }
         setGenerating(true);
         try {
+            // Edge Function이 서버에서 모임 조회 + 가입 모임 필터링 + AI 추천까지 전부 처리
             const { data, error } = await supabase.functions.invoke('ai-recommend', {
-                body: { profile, gatherings: gatheringsData, userId: user.id }
+                body: { profile, userId: user.id }
             });
             if (error) throw error;
             const recs = data?.recommendations || [];
