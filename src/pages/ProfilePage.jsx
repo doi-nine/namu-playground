@@ -209,12 +209,10 @@ export default function ProfilePage() {
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
             <h3 style={cardTitleStyle}>취미</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
-              {profile?.favorite_game_categories?.length > 0 ? (
-                profile.favorite_game_categories.map((game, idx) => (
-                  <p key={idx} style={{ margin: '0 0 4px 0' }}>• {game}</p>
-                ))
+              {profile?.favorite_game_title ? (
+                <p style={{ margin: 0 }}>• {profile.favorite_game_title}</p>
               ) : (
-                <p style={{ margin: 0, color: 'var(--text-muted)' }}>등록된 게임이 없습니다</p>
+                <p style={{ margin: 0, color: 'var(--text-muted)' }}>등록된 취미가 없습니다</p>
               )}
             </div>
           </div>
@@ -223,13 +221,13 @@ export default function ProfilePage() {
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
             <h3 style={cardTitleStyle}>하고 싶은 것</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
-              {profile?.recent_games ? (
-                profile.recent_games.split(',').map((game, idx) => (
-                  <p key={idx} style={{ margin: '0 0 4px 0' }}>• {game.trim()}</p>
+              {profile?.favorite_game_categories?.length > 0 ? (
+                profile.favorite_game_categories.map((game, idx) => (
+                  <p key={idx} style={{ margin: '0 0 4px 0' }}>• {game}</p>
                 ))
-              ) : profile?.favorite_game_title ? (
-                <p style={{ margin: 0 }}>• {profile.favorite_game_title}</p>
-              ) : null}
+              ) : (
+                <p style={{ margin: 0, color: 'var(--text-muted)' }}>등록된 게임이 없습니다</p>
+              )}
             </div>
           </div>
         </div>
@@ -266,8 +264,8 @@ export default function ProfilePage() {
               {profile?.location && (
                 <p style={{ margin: '0 0 6px 0' }}>지역: {profile.location}</p>
               )}
-              {profile?.favorite_game_categories?.length > 0 && (
-                <p style={{ margin: '0 0 6px 0' }}>좋아하는 것: {profile.favorite_game_categories.join(', ')}</p>
+              {profile?.recent_games && (
+                <p style={{ margin: '0 0 6px 0' }}>좋아하는 것: {profile.recent_games}</p>
               )}
               {profile?.bio && (
                 <p style={{ margin: '12px 0 0 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
