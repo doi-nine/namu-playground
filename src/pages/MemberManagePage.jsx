@@ -93,11 +93,58 @@ export default function MemberManagePage() {
   };
 
   const handleKickMember = async (memberId, memberUserId) => {
-    if (!confirm('정말 이 참가자를 강제 퇴출하시겠습니까?')) return;
+    if (!confirm('정말 이 참가자를 강제 퇴출하시겠습니까?\n\n가입된 모든 일정에서도 함께 탈퇴됩니다.')) return;
 
     try {
-      // RLS 정책 상 delete가 안 될 수 있으므로 status를 kicked로 변경 (soft-delete)
-      // 멤버 조회 시 status='approved' 필터가 있어 자동 제외됨
+      // 1. 해당 모임의 모든 일정에서 퇴출 멤버 탈퇴 처리
+      const { data: gatheringSchedules } = await supabase
+        .from('schedules')
+        .select('id, current_members, created_by')
+        .eq('gathering_id', id);
+
+      if (gatheringSchedules && gatheringSchedules.length > 0) {
+        for (const schedule of gatheringSchedules) {
+          // 해당 일정에 실제로 참여했는지 확인
+          const { data: myScheduleMembership } = await supabase
+            .from('schedule_members')
+            .select('user_id')
+            .eq('schedule_id', schedule.id)
+            .eq('user_id', memberUserId)
+            .maybeSingle();
+
+          if (!myScheduleMembership) continue;
+
+          // 퇴출 멤버가 일정 모집장인 경우 다른 멤버에게 자동 양도
+          if (schedule.created_by === memberUserId) {
+            const { data: otherMembers } = await supabase
+              .from('schedule_members')
+              .select('user_id')
+              .eq('schedule_id', schedule.id)
+              .neq('user_id', memberUserId)
+              .limit(1);
+
+            if (otherMembers && otherMembers.length > 0) {
+              await supabase
+                .from('schedules')
+                .update({ created_by: otherMembers[0].user_id })
+                .eq('id', schedule.id);
+            }
+          }
+
+          await supabase
+            .from('schedule_members')
+            .delete()
+            .eq('schedule_id', schedule.id)
+            .eq('user_id', memberUserId);
+
+          await supabase
+            .from('schedules')
+            .update({ current_members: Math.max(0, schedule.current_members - 1) })
+            .eq('id', schedule.id);
+        }
+      }
+
+      // 2. 모임 멤버 강제 퇴출 (kicked 처리)
       const { error } = await supabase
         .from('gathering_members')
         .update({ status: 'kicked' })
