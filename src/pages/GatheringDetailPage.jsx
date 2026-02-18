@@ -304,7 +304,7 @@ export default function GatheringDetailPage() {
       // 1. 현재 모임의 모든 일정에서 사용자 탈퇴 처리
       const { data: schedules } = await supabase
         .from('schedules')
-        .select('id')
+        .select('id, current_members')
         .eq('gathering_id', id);
 
       if (schedules && schedules.length > 0) {
@@ -315,6 +315,12 @@ export default function GatheringDetailPage() {
             .delete()
             .eq('schedule_id', schedule.id)
             .eq('user_id', currentUser.id);
+
+          // 일정의 current_members 업데이트
+          await supabase
+            .from('schedules')
+            .update({ current_members: Math.max(0, schedule.current_members - 1) })
+            .eq('id', schedule.id);
         }
       }
 
