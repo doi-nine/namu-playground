@@ -127,7 +127,7 @@ export default function GatheringListPage() {
     setIsGeneratingAI(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-recommend', {
-        body: { profile, userId: user.id }
+        body: { userId: user.id }
       });
 
       if (error) throw error;

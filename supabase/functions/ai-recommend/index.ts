@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { profile, userId } = await req.json()
+    const { userId } = await req.json()
 
-    if (!profile || !userId) {
+    if (!userId) {
       return new Response(
         JSON.stringify({ recommendations: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -27,14 +27,28 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1) 내가 가입한 모임 ID 조회
+    // 1) 프로필 서버에서 직접 조회 (클라이언트 캐시 무시)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('favorite_game_categories, age_range, birth_year, location, favorite_game_title, recent_games, bio')
+      .eq('id', userId)
+      .single()
+
+    if (!profile) {
+      return new Response(
+        JSON.stringify({ recommendations: [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 2) 내가 가입한 모임 ID 조회
     const { data: joined } = await supabase
       .from('gathering_members')
       .select('gathering_id')
       .eq('user_id', userId)
     const joinedIds = new Set((joined || []).map((m: any) => m.gathering_id))
 
-    // 2) 참여한 모임 태그 히스토리 수집
+    // 3) 참여한 모임 태그 히스토리 수집
     let joinedTags: string[] = []
     if (joinedIds.size > 0) {
       const { data: joinedGatherings } = await supabase
@@ -45,7 +59,6 @@ serve(async (req) => {
         .flatMap((g: any) => g.tags || [])
         .filter(Boolean)
     }
-    // 태그 빈도 집계 (상위 10개)
     const joinedTagFreq: Record<string, number> = {}
     joinedTags.forEach(t => { joinedTagFreq[t] = (joinedTagFreq[t] || 0) + 1 })
     const topJoinedTags = Object.entries(joinedTagFreq)
@@ -53,7 +66,7 @@ serve(async (req) => {
       .slice(0, 10)
       .map(([tag]) => tag)
 
-    // 3) 즐겨찾기한 모임 태그 수집
+    // 4) 즐겨찾기한 모임 태그 수집
     const { data: bookmarks } = await supabase
       .from('gathering_bookmarks')
       .select('gathering_id')
@@ -72,7 +85,7 @@ serve(async (req) => {
     }
     const uniqueBookmarkTags = [...new Set(bookmarkTags)]
 
-    // 4) 미가입 + 내가 만든 것 제외한 모임 조회 (최대 50개)
+    // 5) 미가입 + 내가 만든 것 제외한 모임 조회
     const { data: allGatherings, error: gatheringsError } = await supabase
       .from('gatherings')
       .select('*')
@@ -82,7 +95,7 @@ serve(async (req) => {
 
     if (gatheringsError) throw gatheringsError
 
-    // 5) 가입한 모임 + 정원 초과 제외
+    // 6) 가입한 모임 + 정원 초과 제외
     const available = (allGatherings || []).filter(
       (g: any) => !joinedIds.has(g.id) && g.current_members < g.max_members
     ).slice(0, 20)
@@ -101,6 +114,25 @@ serve(async (req) => {
         ? `${new Date().getFullYear() - profile.birth_year + 1}세`
         : '미기재'
 
+    // 사용자 관심 정보가 하나도 없는지 체크
+    const hasPreference =
+      (profile.favorite_game_categories?.length > 0) ||
+      (topJoinedTags.length > 0) ||
+      (uniqueBookmarkTags.length > 0) ||
+      profile.location ||
+      profile.favorite_game_title ||
+      profile.recent_games ||
+      profile.bio
+
+    const systemPrompt = hasPreference
+      ? `모임 추천 전문가. 사용자 프로필·활동 히스토리와 실제로 연관된 모임만 추천.
+프로필·히스토리에 없는 장르·카테고리는 절대 추천하지 말 것.
+추천 근거가 없으면 빈 배열 반환.
+우선순위: ①즐겨찾기 태그 일치 ②참여 히스토리 태그 일치 ③관심 카테고리 일치 ④나이대·지역.
+반드시 목록의 ID만 사용. 최대 5개. 응답은 JSON만: {"recommendations":[{"gathering_id":"UUID","reason":"한 문장"}]}`
+      : `모임 추천 전문가. 사용자 프로필 정보가 부족하므로 추천 불가.
+반드시 빈 배열 반환: {"recommendations":[]}`
+
     // OpenAI API 호출
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -113,10 +145,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `게임/취미 모임 추천 전문가. 사용자 프로필과 활동 히스토리를 종합적으로 분석하여 아래 목록에서 최적의 모임을 추천.
-목록은 이미 사용자가 가입하지 않은 모임만 포함됨. 목록에 모임이 있으면 최소 1개는 반드시 추천하고 최대 5개까지 추천.
-추천 시 우선순위: ①즐겨찾기 태그 일치 ②참여 히스토리 태그 일치 ③관심 카테고리 일치 ④나이대·지역 적합성.
-반드시 목록의 ID만 사용. 응답은 JSON만: {"recommendations":[{"gathering_id":"UUID","reason":"한 문장"}]}`
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -136,7 +165,7 @@ serve(async (req) => {
 ${available.map((g: any) => `${g.id}|${g.title}|태그:${(g.tags || []).join('/')}|지역:${g.location || g.online_platform || '미정'}|${g.description?.substring(0, 80) || ''}`).join('\n')}`
           }
         ],
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 600
       })
     })
@@ -163,21 +192,13 @@ ${available.map((g: any) => `${g.id}|${g.title}|태그:${(g.tags || []).join('/'
     }
 
     // 추천된 모임 ID로 실제 데이터 가져오기
-    let recommendationsWithData = (parsedResponse.recommendations || [])
+    const recommendationsWithData = (parsedResponse.recommendations || [])
       .map((rec: any) => {
         const gathering = available.find((g: any) => g.id === rec.gathering_id)
         if (!gathering) return null
         return { ...gathering, reason: rec.reason }
       })
       .filter(Boolean)
-
-    // AI가 빈 추천을 반환했지만 available 모임이 있는 경우 폴백
-    if (recommendationsWithData.length === 0 && available.length > 0) {
-      recommendationsWithData = available.slice(0, 5).map((g: any) => ({
-        ...g,
-        reason: '새로운 사람들과 함께할 수 있는 모임이에요!'
-      }))
-    }
 
     return new Response(
       JSON.stringify({ recommendations: recommendationsWithData }),
