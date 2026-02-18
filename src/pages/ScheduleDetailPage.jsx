@@ -80,7 +80,7 @@ export default function ScheduleDetailPage() {
     }
   }, [activeTab, currentUser]);
 
-  // 초기 로드 완료 시 최하단으로 즉시 스크롤 (모바일/데스크탑 공통)
+  // 대화탭 진입 시 최하단으로 즉시 스크롤 (초기 로드 + 탭 재진입 공통)
   useEffect(() => {
     if (!chatLoading) {
       requestAnimationFrame(() => {
@@ -88,7 +88,7 @@ export default function ScheduleDetailPage() {
         if (container) container.scrollTop = container.scrollHeight;
       });
     }
-  }, [chatLoading]);
+  }, [chatLoading, activeTab]);
 
   // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
   useEffect(() => {
