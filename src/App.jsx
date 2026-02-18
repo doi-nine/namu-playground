@@ -21,6 +21,7 @@ import PremiumSuccessPage from './pages/PremiumSuccessPage';
 import PopularityPage from './pages/PopularityPage';
 import UserProfilePage from './pages/UserProfilePage';
 import EmailVerifyPage from './pages/EmailVerifyPage';
+import SupportPage from './pages/SupportPage';
 
 function AppLayout({ children }) {
   return (
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/premium" element={<AppLayout><PremiumPage /></AppLayout>} />
         <Route path="/premium/success" element={<AppLayout><PremiumSuccessPage /></AppLayout>} />
         <Route path="/users/:userId" element={<AppLayout><UserProfilePage /></AppLayout>} />
+        <Route path="/support" element={<AppLayout><SupportPage /></AppLayout>} />
       </Routes>
       </div>
     </AuthProvider>
