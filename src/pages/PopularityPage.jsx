@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const voteTypes = [
     { id: 'kind', label: '정말 친절해요', emoji: '😊' },
@@ -27,6 +28,7 @@ export default function PopularityPage() {
     const navigate = useNavigate();
     const { userId: paramUserId } = useParams();
     const { user, profile } = useAuth();
+    const isMobile = useIsMobile();
     const [scores, setScores] = useState(null);
     const [recentVoters, setRecentVoters] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -131,7 +133,7 @@ export default function PopularityPage() {
     const maxCount = Math.max(1, ...voteTypes.map(t => scores?.[`${t.id}_count`] || 0));
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '85%' } : {}) }}>
             {/* 헤더 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                 <button

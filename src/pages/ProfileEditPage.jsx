@@ -3,11 +3,13 @@ import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PremiumModal from '../components/PremiumModal';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 
 export default function ProfileEditPage() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
 
   const [nickname, setNickname] = useState("");
@@ -193,7 +195,7 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '85%' } : {}) }}>
       <h1 style={{
         fontSize: '24px',
         fontWeight: '700',

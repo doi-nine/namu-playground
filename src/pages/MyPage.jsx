@@ -124,7 +124,7 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px' : '0' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px' : '0', ...(isMobile ? { width: '85%' } : {}) }}>
         <div style={{ textAlign: 'center', paddingTop: '60px' }}>
           <div style={{
             width: '40px',
@@ -142,7 +142,7 @@ export default function MyPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px' : '0' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px' : '0', ...(isMobile ? { width: '85%' } : {}) }}>
       {allGatherings.length === 0 ? (
         <div
           className="glass"

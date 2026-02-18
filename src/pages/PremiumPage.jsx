@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function PremiumPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const isMobile = useIsMobile();
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handleCheckout = async () => {
@@ -60,7 +62,7 @@ export default function PremiumPage() {
     ];
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '85%' } : {}) }}>
             {/* 헤더 */}
             <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🌳</div>

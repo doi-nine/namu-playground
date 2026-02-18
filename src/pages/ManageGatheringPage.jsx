@@ -271,7 +271,7 @@ export default function ManageGatheringPage() {
       margin: '0 auto',
       padding: isMobile ? '16px 12px' : '32px 24px',
       ...(isMobile ? {
-        width: '70%',
+        width: '85%',
         background: '#FFFFFF',
         borderRadius: '16px',
         minHeight: '100%',

@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function CreateSchedulePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const isMobile = useIsMobile();
   const maxAllowed = profile?.is_premium ? 100 : 20;
 
   const [form, setForm] = useState({
@@ -92,7 +94,7 @@ export default function CreateSchedulePage() {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px', paddingBottom: '100px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px 100px' : '32px 24px 100px', ...(isMobile ? { width: '85%' } : {}) }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
         <button

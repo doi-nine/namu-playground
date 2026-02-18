@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function ScheduleDetailPage() {
   const { id, scheduleId } = useParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const isMobile = useIsMobile();
 
   const [schedule, setSchedule] = useState(null);
   const [members, setMembers] = useState([]);
@@ -278,7 +280,7 @@ export default function ScheduleDetailPage() {
   const canEval = schedule.is_completed && myMembership && !evalDone;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 4px', paddingBottom: '100px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px 100px' : '28px 4px 100px', ...(isMobile ? { width: '85%' } : {}) }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '0 4px' }}>
         <button
