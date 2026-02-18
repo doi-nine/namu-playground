@@ -649,10 +649,11 @@ export default function ScheduleDetailPage() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="메시지를 입력하세요..."
+                    placeholder={isMobile ? '메시지 입력...' : '메시지를 입력하세요...'}
                     style={{
                       flex: 1,
                       minWidth: 0,
+                      maxWidth: isMobile ? '55%' : '100%',
                       padding: isMobile ? '9px 12px' : '12px 16px',
                       background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)',
                       borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
@@ -695,23 +696,25 @@ export default function ScheduleDetailPage() {
                   >
                     {summaryLoading ? (
                       <>
-                        <div style={{
+                        {!isMobile && <div style={{
                           width: '12px', height: '12px',
                           border: '2px solid rgba(107,144,128,0.2)',
                           borderTop: '2px solid var(--button-primary)',
                           borderRadius: '50%',
                           animation: 'spin 0.8s linear infinite'
-                        }} />
+                        }} />}
                         요약 중
                       </>
                     ) : (
                       <>
-                        <svg width={isMobile ? '14' : '16'} height={isMobile ? '14' : '16'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                        </svg>
+                        {!isMobile && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                          </svg>
+                        )}
                         요약
                       </>
                     )}
