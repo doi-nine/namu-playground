@@ -653,7 +653,6 @@ export default function ScheduleDetailPage() {
                     style={{
                       flex: 1,
                       minWidth: 0,
-                      maxWidth: isMobile ? '55%' : '100%',
                       padding: isMobile ? '9px 12px' : '12px 16px',
                       background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)',
                       borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
