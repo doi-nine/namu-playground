@@ -166,31 +166,29 @@ export default function UserProfilePage() {
           {profile?.is_premium && (
             <span style={{ fontSize: '20px' }}>👑</span>
           )}
-          <div
-            onClick={() => {
-              if (myProfile?.is_premium) {
-                navigate(`/popularity/${userId}`);
-              }
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              border: '1.6px solid #6B9080',
-              borderRadius: '10px',
-              background: '#FFFFFF',
-              cursor: myProfile?.is_premium ? 'pointer' : 'default',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => { if (myProfile?.is_premium) e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
-            onMouseLeave={(e) => { if (myProfile?.is_premium) e.currentTarget.style.background = '#FFFFFF'; }}
-          >
-            <Heart size={18} color="#F43F5E" fill="#F43F5E" />
-            <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
-              {popularityScore}
-            </span>
-          </div>
+          {myProfile?.is_premium && (
+            <div
+              onClick={() => navigate(`/popularity/${userId}`)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                border: '1.6px solid #6B9080',
+                borderRadius: '10px',
+                background: '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+            >
+              <Heart size={18} color="#F43F5E" fill="#F43F5E" />
+              <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                {popularityScore}
+              </span>
+            </div>
+          )}
           <button
             onClick={() => navigate(`/users/${userId}/history`)}
             style={{
