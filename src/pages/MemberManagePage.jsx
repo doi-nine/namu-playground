@@ -217,6 +217,7 @@ export default function MemberManagePage() {
       margin: '0 auto',
       padding: isMobile ? '16px 12px' : '32px 24px',
       ...(isMobile ? {
+        width: '90%',
         background: '#FFFFFF',
         borderRadius: '16px',
         minHeight: '100%',
