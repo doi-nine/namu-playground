@@ -143,12 +143,16 @@ button:focus-visible {
 
 /* 모바일 Flexbox 레이아웃 — position:fixed 없이 탭바 고정 */
 .mobile-layout {
-  height: 100vh;
-  height: 100dvh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: none;
+  z-index: 1;
 }
 
 .mobile-content {
