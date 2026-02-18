@@ -382,7 +382,7 @@ export default function ScheduleDetailPage() {
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             padding: '4px 8px', borderRadius: '8px', fontSize: '20px',
-            color: 'var(--button-primary)', display: 'flex', alignItems: 'center',
+            color: isMobile ? 'var(--text-primary)' : 'var(--button-primary)', display: 'flex', alignItems: 'center',
             transition: 'background-color 0.2s',
           }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.1)'}
@@ -391,7 +391,7 @@ export default function ScheduleDetailPage() {
           ‹
         </button>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0, color: 'var(--button-primary)' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0, color: isMobile ? 'var(--text-primary)' : 'var(--button-primary)' }}>
             {schedule.title}
             {schedule.is_completed && (
               <span style={{ marginLeft: '10px', fontSize: '14px', color: '#059669', fontWeight: '500' }}>✅ 완료</span>
