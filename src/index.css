@@ -37,8 +37,10 @@
   padding: 0;
 }
 
-html {
-  overflow-y: scroll;
+@media (min-width: 768px) {
+  html {
+    overflow-y: scroll;
+  }
 }
 
 body {
@@ -123,10 +125,17 @@ button:focus-visible {
   }
 }
 
-/* 모바일에서 background-attachment: fixed → position:fixed 깨짐 방지 */
-@media (max-width: 767px) {
+/* 데스크톱에서만 background-attachment: fixed 적용 */
+@media (min-width: 768px) {
   .app-bg {
-    background-attachment: scroll !important;
+    background-attachment: fixed;
+  }
+}
+
+/* 모바일 오버스크롤/노치 영역 흰색 처리 */
+@media (max-width: 767px) {
+  html, body {
+    background-color: #FFFFFF;
   }
 }
 

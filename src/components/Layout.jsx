@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -112,82 +113,64 @@ export default function Layout({ children }) {
 
   // 모바일 하단 탭바
   if (isMobile) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        paddingBottom: '80px'
+    const tabBar = (
+      <div className="bottom-tab-bar" style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        padding: '8px 0',
+        background: '#FFFFFF',
+        borderTop: '1px solid rgba(0,0,0,0.08)',
       }}>
-        {/* 메인 콘텐츠 */}
-        <div style={{ padding: '8px 8px 0 8px' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3))',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.5)',
-            borderRadius: '16px',
-            padding: '12px 8px 8px 8px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
-          }}>
-            {children}
-          </div>
-        </div>
+        {mobileTabItems.map(item => {
+          const Icon = item.icon;
+          const active = isActive(item.path)
+            || (item.path === '/my/settings' && location.pathname.startsWith('/my/'))
+            || (item.path === '/gatherings' && location.pathname.startsWith('/gatherings'));
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 12px',
+                borderRadius: '8px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Icon
+                size={22}
+                color={active ? 'var(--button-primary)' : 'var(--text-muted)'}
+                strokeWidth={active ? 2.5 : 1.8}
+              />
+              <span style={{
+                fontSize: '10px',
+                fontWeight: active ? '600' : '400',
+                color: active ? 'var(--button-primary)' : 'var(--text-muted)',
+              }}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
 
-        {/* 하단 탭바 */}
-        <div className="bottom-tab-bar" style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          transform: 'translateZ(0)',
-          WebkitTransform: 'translateZ(0)',
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          padding: '8px 0',
-          background: 'rgba(255, 255, 255, 0.92)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderTop: '1px solid rgba(0,0,0,0.06)',
-        }}>
-          {mobileTabItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.path)
-              || (item.path === '/my/settings' && location.pathname.startsWith('/my/'))
-              || (item.path === '/gatherings' && location.pathname.startsWith('/gatherings'));
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px 12px',
-                  borderRadius: '8px',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <Icon
-                  size={22}
-                  color={active ? 'var(--button-primary)' : 'var(--text-muted)'}
-                  strokeWidth={active ? 2.5 : 1.8}
-                />
-                <span style={{
-                  fontSize: '10px',
-                  fontWeight: active ? '600' : '400',
-                  color: active ? 'var(--button-primary)' : 'var(--text-muted)',
-                }}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+    return (
+      <div style={{ paddingBottom: '80px' }}>
+        {children}
+        {createPortal(tabBar, document.body)}
       </div>
     );
   }

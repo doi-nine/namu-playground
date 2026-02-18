@@ -42,7 +42,6 @@ export default function App() {
           radial-gradient(ellipse at 40% 90%, rgba(253, 230, 138, 0.2), transparent 45%),
           linear-gradient(135deg, #A8B8A5, #B0BFA9 50%, #B5C4B1)
         `,
-        backgroundAttachment: 'fixed',
       }}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
