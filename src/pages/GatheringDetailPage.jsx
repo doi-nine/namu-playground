@@ -551,6 +551,17 @@ export default function GatheringDetailPage() {
         }
       }
 
+      // 평가 즉시 popularity_scores 반영
+      const ratedUserIds = Object.entries(scheduleEvalVotes)
+        .filter(([, dir]) => dir)
+        .map(([uid]) => uid);
+      if (ratedUserIds.length > 0) {
+        await supabase.functions.invoke('recalculate-popularity', {
+          body: { user_ids: ratedUserIds },
+        });
+        await refreshScores();
+      }
+
       setScheduleEvalDone(prev => ({ ...prev, [activeEvalScheduleId]: true }));
       setActiveEvalScheduleId(null);
 

@@ -290,6 +290,7 @@ export default function ScheduleDetailPage() {
   const handleSubmitEval = async () => {
     setEvalSubmitting(true);
     try {
+      const ratedUserIds = [];
       for (const [targetId, direction] of Object.entries(evalVotes)) {
         if (!direction) continue;
         const voteType = direction === 'up' ? 'thumbs_up' : 'thumbs_down';
@@ -299,6 +300,7 @@ export default function ScheduleDetailPage() {
           p_vote_type: voteType,
           p_schedule_id: parseInt(scheduleId),
         });
+        ratedUserIds.push(targetId);
         if (direction === 'up') {
           for (const kw of (evalKeywords[targetId] || [])) {
             await supabase.rpc('submit_schedule_eval', {
@@ -309,6 +311,12 @@ export default function ScheduleDetailPage() {
             });
           }
         }
+      }
+      // 평가 즉시 popularity_scores 반영
+      if (ratedUserIds.length > 0) {
+        await supabase.functions.invoke('recalculate-popularity', {
+          body: { user_ids: ratedUserIds },
+        });
       }
       setEvalDone(true);
       setShowEval(false);
@@ -572,7 +580,7 @@ export default function ScheduleDetailPage() {
                 cursor: 'pointer', fontWeight: '700', fontSize: '15px',
               }}
             >
-              ⭐ 멤버 평가하기
+              ❤️ 멤버 평가하기
             </button>
           )}
           {schedule.is_completed && evalDone && (

@@ -39,7 +39,10 @@ export default function AIRecommendPage() {
             if (error) throw error;
             const recs = data?.recommendations || [];
             if (recs.length === 0) {
-                alert('현재 조건에 맞는 모임을 찾지 못했습니다. 횟수는 차감되지 않았습니다.');
+                const msg = profile.is_premium
+                    ? '현재 조건에 맞는 모임을 찾지 못했습니다.'
+                    : '현재 조건에 맞는 모임을 찾지 못했습니다. 횟수는 차감되지 않았습니다.';
+                alert(msg);
                 setRecommendations([]);
                 return;
             }
@@ -112,9 +115,11 @@ export default function AIRecommendPage() {
                     <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
                         추천할 모임이 없습니다
                     </h2>
-                    <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>
-                        횟수는 차감되지 않았습니다.
-                    </p>
+                    {!profile?.is_premium && (
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>
+                            횟수는 차감되지 않았습니다.
+                        </p>
+                    )}
                     <button
                         onClick={() => navigate('/gatherings')}
                         style={{

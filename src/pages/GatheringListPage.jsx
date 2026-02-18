@@ -606,7 +606,9 @@ export default function GatheringListPage() {
                 <p style={{ fontSize: '16px', color: 'var(--text-muted)', marginBottom: '8px' }}>
                   현재 조건에 맞는 모임을 찾지 못했습니다.
                 </p>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>횟수는 차감되지 않았습니다.</p>
+                {!profile?.is_premium && (
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>횟수는 차감되지 않았습니다.</p>
+                )}
               </div>
             ) : (
               <>
