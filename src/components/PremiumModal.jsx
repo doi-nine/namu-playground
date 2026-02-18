@@ -70,7 +70,7 @@ export default function PremiumModal({ isOpen, onClose }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
                     {[
                         { emoji: '✨', title: 'AI 전 기능 무제한', desc: '추천, 채팅 요약, 글쓰기 보조 모두 무제한' },
-                        { emoji: '⭐', title: '매너도 확인 무제한', desc: '멤버들의 매너도를 자유롭게 확인하세요' },
+                        { emoji: '❤️', title: '매너도 확인 무제한', desc: '멤버들의 매너도를 자유롭게 확인하세요' },
                         { emoji: '🎨', title: '프로필 꾸미기 & 상단 노출', desc: '테마, 배지, 모임 글 상단 노출' }
                     ].map((item, i) => (
                         <div key={i} style={{

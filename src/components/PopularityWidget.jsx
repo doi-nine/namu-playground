@@ -157,7 +157,7 @@ export default function PopularityWidget({ targetUserId, targetUserName }) {
                     margin: 0,
                     color: 'var(--text-primary)'
                 }}>
-                    ⭐ 인기도
+                    ❤️ 매너도
                     <span style={{
                         fontSize: '22px',
                         fontWeight: '700',
