@@ -135,7 +135,9 @@ export default function Layout({ children }) {
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
         }}>
-          {children}
+          <div style={{ width: '90%', margin: '0 auto' }}>
+            {children}
+          </div>
         </div>
 
         {/* 탭바 */}
