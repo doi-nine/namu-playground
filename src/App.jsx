@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
@@ -49,7 +49,7 @@ export default function App() {
         <Route path="/verify-email" element={<EmailVerifyPage />} />
         <Route path="/profile/setup" element={<ProfileSetupPage />} />
 
-        <Route path="/" element={<AppLayout><MyPage /></AppLayout>} />
+        <Route path="/" element={<Navigate to="/gatherings" replace />} />
         <Route path="/my/settings" element={<AppLayout><MyPage /></AppLayout>} />
         <Route path="/my-gatherings" element={<AppLayout><MyPage /></AppLayout>} />
         <Route path="/gathering/create" element={<AppLayout><CreateGatheringPage /></AppLayout>} />

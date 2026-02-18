@@ -103,8 +103,8 @@ export default function Layout({ children }) {
   const isMyGatheringsActive = location.pathname.startsWith('/my/') || location.pathname.startsWith('/gatherings/');
 
   const mobileTabItems = [
-    { path: '/', label: '홈', icon: Home },
-    { path: '/gatherings', label: '검색', icon: Search },
+    { path: '/gatherings', label: '모임', icon: Search },
+    { path: '/notifications', label: '알림', icon: Bell },
     { path: '/gathering/create', label: '만들기', icon: Plus },
     { path: '/my/settings', label: '내 모임', icon: List },
     { path: '/profile', label: '프로필', icon: User },
@@ -152,7 +152,9 @@ export default function Layout({ children }) {
         }}>
           {mobileTabItems.map(item => {
             const Icon = item.icon;
-            const active = isActive(item.path) || (item.path === '/my/settings' && location.pathname.startsWith('/my/'));
+            const active = isActive(item.path)
+              || (item.path === '/my/settings' && location.pathname.startsWith('/my/'))
+              || (item.path === '/gatherings' && location.pathname.startsWith('/gatherings'));
             return (
               <button
                 key={item.path}
