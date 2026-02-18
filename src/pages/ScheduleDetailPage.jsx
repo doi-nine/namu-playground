@@ -112,7 +112,7 @@ export default function ScheduleDetailPage() {
 
       const { data: membersData } = await supabase
         .from('schedule_members')
-        .select('user_id, status, profiles(nickname, custom_badge, is_premium)')
+        .select('user_id, status, attendance_status, profiles(nickname, custom_badge, is_premium)')
         .eq('schedule_id', scheduleId);
       setMembers(membersData || []);
 
@@ -249,6 +249,22 @@ export default function ScheduleDetailPage() {
       navigate(`/gatherings/${id}`, { state: { tab: 'schedules' } });
     } catch (err) {
       alert('일정 취소 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  const handleAttendanceStatus = async (e, newStatus) => {
+    e.stopPropagation();
+    try {
+      await supabase
+        .from('schedule_members')
+        .update({ attendance_status: newStatus })
+        .eq('schedule_id', scheduleId)
+        .eq('user_id', currentUser.id);
+      setMembers(prev => prev.map(m =>
+        m.user_id === currentUser.id ? { ...m, attendance_status: newStatus } : m
+      ));
+    } catch (err) {
+      console.error('참석 상태 변경 오류:', err);
     }
   };
 
@@ -537,6 +553,43 @@ export default function ScheduleDetailPage() {
                         {member.profiles.custom_badge}
                       </span>
                     )}
+                    {/* 참석 상태 버튼 (본인만 조작 가능) */}
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                      {member.user_id === currentUser?.id ? (
+                        <>
+                          <button
+                            onClick={(e) => handleAttendanceStatus(e, 'confirmed')}
+                            style={{
+                              padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                              border: '1.5px solid',
+                              borderColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'rgba(0,0,0,0.12)',
+                              backgroundColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'transparent',
+                              color: member.attendance_status === 'confirmed' ? '#fff' : 'var(--text-muted)',
+                              cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                          >확정</button>
+                          <button
+                            onClick={(e) => handleAttendanceStatus(e, 'pending')}
+                            style={{
+                              padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                              border: '1.5px solid',
+                              borderColor: member.attendance_status === 'pending' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.12)',
+                              backgroundColor: member.attendance_status === 'pending' ? 'rgba(0,0,0,0.08)' : 'transparent',
+                              color: member.attendance_status === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)',
+                              cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                          >보류</button>
+                        </>
+                      ) : (
+                        <span style={{
+                          padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                          backgroundColor: member.attendance_status === 'confirmed' ? 'rgba(107,144,128,0.15)' : 'rgba(0,0,0,0.06)',
+                          color: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'var(--text-muted)',
+                        }}>
+                          {member.attendance_status === 'confirmed' ? '확정' : '보류'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
