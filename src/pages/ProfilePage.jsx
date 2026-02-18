@@ -92,10 +92,10 @@ export default function ProfilePage() {
     borderBottom: '1px solid rgba(0,0,0,0.08)',
   };
 
-  const bannerHeight = isMobile ? 180 : 300;
-  const bannerInnerHeight = isMobile ? 156 : 276;
-  const bannerTop = isMobile ? 155 : 250;
-  const bannerLeft = isMobile ? 16 : 32;
+  const bannerHeight = isMobile ? 150 : 300;
+  const bannerInnerHeight = isMobile ? 100 : 276;
+  const bannerTop = isMobile ? 16 : 250;
+  const bannerLeft = isMobile ? 12 : 32;
 
   return (
     <div style={{ position: 'relative', paddingTop: `${bannerHeight}px` }}>
