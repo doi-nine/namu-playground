@@ -94,7 +94,7 @@ export default function ProfilePage() {
 
   const bannerHeight = isMobile ? 150 : 300;
   const bannerInnerHeight = isMobile ? 100 : 276;
-  const bannerTop = isMobile ? 16 : 250;
+  const bannerTop = isMobile ? 130 : 250;
   const bannerLeft = isMobile ? 12 : 32;
 
   return (
