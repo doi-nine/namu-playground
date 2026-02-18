@@ -80,11 +80,10 @@ export default function ScheduleDetailPage() {
     }
   }, [activeTab, currentUser]);
 
-  useEffect(() => {
-    if (isAtBottom.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
+  // 자동 스크롤 비활성화 - 새 메시지 도착 시 스크롤 고정
+  // useEffect(() => {
+  //   if (isAtBottom.current) { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }
+  // }, [messages]);
 
   const fetchAll = async () => {
     try {
@@ -162,7 +161,6 @@ export default function ScheduleDetailPage() {
         .select('*, profiles(nickname, custom_badge, is_premium)')
         .single();
       if (error) throw error;
-      isAtBottom.current = true;
       setMessages(prev => [...prev, data]);
       setNewMessage('');
     } catch (err) {
@@ -662,7 +660,7 @@ export default function ScheduleDetailPage() {
                     onClick={sendMessage}
                     disabled={!newMessage.trim()}
                     style={{
-                      padding: isMobile ? '9px 10px' : '12px 24px',
+                      padding: isMobile ? '9px 12px' : '12px 24px',
                       background: newMessage.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
                       color: newMessage.trim() ? '#FFFFFF' : 'var(--text-muted)',
                       border: 'none', borderRadius: '10px', fontWeight: '600',

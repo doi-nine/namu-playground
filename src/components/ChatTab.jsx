@@ -40,11 +40,10 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
         }
     }, [gatheringId]);
 
-    useEffect(() => {
-        if (isAtBottom.current) {
-            scrollToBottom();
-        }
-    }, [messages]);
+    // 자동 스크롤 비활성화 - 새 메시지 도착 시 스크롤 고정
+    // useEffect(() => {
+    //     if (isAtBottom.current) { scrollToBottom(); }
+    // }, [messages]);
 
     const fetchUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -99,8 +98,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
 
             if (error) throw error;
 
-            // 전송 성공하면 바로 메시지 목록에 추가 (항상 하단으로 이동)
-            isAtBottom.current = true;
+            // 전송 성공하면 바로 메시지 목록에 추가
             setMessages(prev => [...prev, data]);
             setNewMessage('');
         } catch (error) {
@@ -348,7 +346,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                         onClick={sendMessage}
                         disabled={!newMessage.trim()}
                         style={{
-                            padding: isMobile ? '9px 10px' : '12px 24px',
+                            padding: isMobile ? '9px 12px' : '12px 24px',
                             background: newMessage.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
                             color: newMessage.trim() ? '#FFFFFF' : 'var(--text-muted)',
                             border: 'none',
