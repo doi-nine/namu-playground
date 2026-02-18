@@ -390,7 +390,7 @@ export default function CreateGatheringPage() {
                     <div className="glass-strong" style={{ borderRadius: '16px', padding: '24px' }}>
                         <h2 style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)', marginBottom: '12px' }}>어떤 모임을 만들고 싶으신가요?</h2>
                         <textarea
-                            placeholder="예) 주말 보드게임 모임. 초보환영. 2030대만."
+                            placeholder="예) 주말 보드게임 모임. 초보환영. 강남역 레드버튼."
                             value={aiInput}
                             onChange={(e) => setAiInput(e.target.value)}
                             rows={5}
