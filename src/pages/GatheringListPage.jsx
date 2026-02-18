@@ -209,7 +209,7 @@ export default function GatheringListPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '85%' } : {}) }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '93%' } : {}) }}>
       {/* 검색 영역 */}
       <div style={{ marginBottom: '16px' }}>
         {isMobile ? (
