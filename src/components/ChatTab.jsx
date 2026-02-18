@@ -40,10 +40,10 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
         }
     }, [gatheringId]);
 
-    // 자동 스크롤 비활성화 - 새 메시지 도착 시 스크롤 고정
-    // useEffect(() => {
-    //     if (isAtBottom.current) { scrollToBottom(); }
-    // }, [messages]);
+    // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
+    useEffect(() => {
+        if (isMobile) { scrollToBottom(); }
+    }, [messages]);
 
     const fetchUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();

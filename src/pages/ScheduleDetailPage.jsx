@@ -80,10 +80,10 @@ export default function ScheduleDetailPage() {
     }
   }, [activeTab, currentUser]);
 
-  // 자동 스크롤 비활성화 - 새 메시지 도착 시 스크롤 고정
-  // useEffect(() => {
-  //   if (isAtBottom.current) { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }
-  // }, [messages]);
+  // 모바일: 새 메시지 도착 시 채팅창 최하단 자동 스크롤
+  useEffect(() => {
+    if (isMobile) { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }
+  }, [messages]);
 
   const fetchAll = async () => {
     try {
