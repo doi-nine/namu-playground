@@ -110,15 +110,32 @@ export default function Layout({ children }) {
     { path: '/profile', label: '프로필', icon: User },
   ];
 
-  // 모바일 하단 탭바 — position:fixed 대신 flexbox 레이아웃 사용
+  // 모바일: 전체 뷰포트를 fixed로 잡고 내부만 스크롤
   if (isMobile) {
     return (
-      <div className="mobile-layout">
-        <div className="mobile-content">
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        zIndex: 1,
+      }}>
+        <div style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}>
           {children}
         </div>
 
-        {/* 탭바: flexbox의 하단 고정 영역 */}
+        {/* 탭바 */}
         <div
           className="bottom-tab-bar"
           onTouchMove={(e) => e.preventDefault()}
