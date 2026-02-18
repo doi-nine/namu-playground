@@ -97,7 +97,7 @@ export default function PopularityPage() {
 
             setTotalVoteCount(count || 0);
         } catch (err) {
-            console.error('인기도 데이터 로드 오류:', err);
+            console.error('매너도 데이터 로드 오류:', err);
         } finally {
             setLoading(false);
         }
@@ -163,7 +163,7 @@ export default function PopularityPage() {
                     </svg>
                 </button>
                 <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--button-primary)', margin: 0 }}>
-                    {isViewingOther ? `${targetNickname}님의 인기도` : '내 인기도'}
+                    {isViewingOther ? `${targetNickname}님의 매너도` : '내 매너도'}
                 </h1>
             </div>
 
@@ -319,12 +319,12 @@ export default function PopularityPage() {
                 padding: '20px 24px',
             }}>
                 <h2 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
-                    인기도란?
+                    매너도란?
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
                     <p style={{ margin: 0 }}>모임이 완료되면 함께한 멤버들을 평가할 수 있어요.</p>
                     <p style={{ margin: 0 }}>평가는 선택사항이며, 익명으로 진행돼요.</p>
-                    <p style={{ margin: 0 }}>인기도가 높을수록 모임에서 신뢰도가 올라가요!</p>
+                    <p style={{ margin: 0 }}>매너도가 높을수록 모임에서 신뢰도가 올라가요!</p>
                 </div>
             </div>
         </div>

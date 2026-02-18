@@ -48,14 +48,14 @@ export default function PremiumPage() {
         { icon: '🤖', title: 'AI 맞춤 추천', desc: '월 3회' },
         { icon: '💬', title: 'AI 채팅 요약', desc: '월 3회' },
         { icon: '✍️', title: 'AI 글쓰기 보조 (모임/프로필)', desc: '월 3회' },
-        { icon: '⭐', title: '인기도 조회', desc: '불가' },
+        { icon: '⭐', title: '매너도 조회', desc: '불가' },
         { icon: '🎨', title: '프로필 꾸미기', desc: '불가' },
         { icon: '👥', title: '일정 모집인원', desc: '최대 20명' },
     ];
 
     const premiumFeatures = [
         { icon: '✨', title: 'AI 전 기능 무제한', desc: '추천, 채팅 요약, 글쓰기 보조 모두 무제한' },
-        { icon: '⭐', title: '인기도 조회 무제한', desc: '멤버들의 인기도를 자유롭게 확인하세요' },
+        { icon: '⭐', title: '매너도 조회 무제한', desc: '멤버들의 매너도를 자유롭게 확인하세요' },
         { icon: '🎨', title: '프로필 꾸미기', desc: '테마, 배지로 나만의 프로필을 꾸며보세요' },
         { icon: '📌', title: '모임 글 상단 노출', desc: '모임 리스트에서 내 모임이 먼저 보여요' },
         { icon: '👥', title: '일정 모집인원 확대', desc: '일정당 최대 100명까지 모집할 수 있어요' },

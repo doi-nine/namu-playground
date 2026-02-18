@@ -50,7 +50,7 @@ export default function UserProfilePage() {
 
       setPopularityScore(data?.total_score || 0);
     } catch (error) {
-      console.error('인기도 로드 오류:', error);
+      console.error('매너도 로드 오류:', error);
     }
   }
 
@@ -128,7 +128,7 @@ export default function UserProfilePage() {
         borderRadius: '16px 16px 0 0',
       }} />
 
-      {/* 닉네임 + 인기도 */}
+      {/* 닉네임 + 매너도 */}
       <div style={{
         position: 'absolute',
         top: '250px',

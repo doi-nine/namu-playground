@@ -86,7 +86,7 @@ export default function GatheringDetailPage() {
 
         if (membersError) throw membersError;
 
-        // 모든 멤버 + 모임장 인기도 점수 가져오기
+        // 모든 멤버 + 모임장 매너도 점수 가져오기
         const allMemberIds = membersData?.map(m => m.user_id) || [];
         const allIds = [...new Set([...allMemberIds, gatheringData.creator_id])];
         let scoresMap = {};

@@ -51,7 +51,7 @@ export default function ProfilePage() {
 
       setPopularityScore(data?.total_score || 0);
     } catch (error) {
-      console.error('인기도 로드 오류:', error);
+      console.error('매너도 로드 오류:', error);
     }
   }
 
@@ -147,7 +147,7 @@ export default function ProfilePage() {
           )}
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          {/* 인기도 버튼 */}
+          {/* 매너도 버튼 */}
           <button
             onClick={() => navigate('/popularity')}
             style={{
