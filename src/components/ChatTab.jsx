@@ -394,7 +394,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                                     borderRadius: '50%',
                                     animation: 'spin 0.8s linear infinite'
                                 }} />
-                                {!isMobile && '요약 중'}
+                                요약 중
                             </>
                         ) : (
                             <>
@@ -404,7 +404,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                                     <line x1="16" y1="13" x2="8" y2="13" />
                                     <line x1="16" y1="17" x2="8" y2="17" />
                                 </svg>
-                                {!isMobile && '요약'}
+                                요약
                             </>
                         )}
                         {/* 무료 유저 잔여 횟수 배지 */}
