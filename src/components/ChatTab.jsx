@@ -12,7 +12,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
     const [user, setUser] = useState(null);
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
-    const isAtBottom = useRef(true);
+    const isAtBottom = useRef(false);
 
     const [summaryLoading, setSummaryLoading] = useState(false);
     const [showSummaryModal, setShowSummaryModal] = useState(false);

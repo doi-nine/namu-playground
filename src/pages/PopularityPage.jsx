@@ -84,6 +84,7 @@ export default function PopularityPage() {
                 .select('vote_type, created_at, is_active')
                 .eq('to_user_id', targetUserId)
                 .eq('is_active', true)
+                .in('vote_type', ['thumbs_up', 'thumbs_down'])
                 .order('created_at', { ascending: false })
                 .limit(10);
 
@@ -93,7 +94,8 @@ export default function PopularityPage() {
                 .from('popularity_votes')
                 .select('*', { count: 'exact', head: true })
                 .eq('to_user_id', targetUserId)
-                .eq('is_active', true);
+                .eq('is_active', true)
+                .in('vote_type', ['thumbs_up', 'thumbs_down']);
 
             setTotalVoteCount(count || 0);
         } catch (err) {

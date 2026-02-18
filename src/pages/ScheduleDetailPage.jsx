@@ -31,7 +31,7 @@ export default function ScheduleDetailPage() {
   const [chatLoading, setChatLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const isAtBottom = useRef(true);
+  const isAtBottom = useRef(false);
 
   // 요약 state
   const [summaryLoading, setSummaryLoading] = useState(false);
