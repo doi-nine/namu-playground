@@ -522,9 +522,9 @@ export default function ScheduleDetailPage() {
               </h2>
               {members.length > 0 && (
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  보류: <strong style={{ color: 'var(--text-primary)' }}>{members.filter(m => m.attendance_status !== 'confirmed').length}</strong>
+                  보류: <strong style={{ color: 'var(--text-muted)' }}>{members.filter(m => m.attendance_status !== 'confirmed').length}</strong>
                   {' '}|{' '}
-                  확정: <strong style={{ color: 'var(--button-primary)' }}>{members.filter(m => m.attendance_status === 'confirmed').length}</strong>
+                  확정: <strong style={{ color: 'var(--text-primary)' }}>{members.filter(m => m.attendance_status === 'confirmed').length}</strong>
                 </span>
               )}
             </div>
