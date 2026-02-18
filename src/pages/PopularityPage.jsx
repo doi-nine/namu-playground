@@ -129,7 +129,9 @@ export default function PopularityPage() {
     }
 
     const totalScore = scores?.total_score || 0;
-    const totalVotes = voteTypes.reduce((sum, t) => sum + (scores?.[`${t.id}_count`] || 0), 0);
+    const totalVotes = voteTypes.reduce((sum, t) => sum + (scores?.[`${t.id}_count`] || 0), 0)
+        + (scores?.thumbs_up_count || 0)
+        + (scores?.thumbs_down_count || 0);
     const maxCount = Math.max(1, ...voteTypes.map(t => scores?.[`${t.id}_count`] || 0));
 
     return (
