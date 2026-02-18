@@ -212,18 +212,9 @@ export default function MemberManagePage() {
   }
 
   return (
-    <div style={{
-      maxWidth: '800px',
-      margin: '0 auto',
-      padding: isMobile ? '16px 12px' : '32px 24px',
-      ...(isMobile ? {
-        width: '90%',
-        background: '#FFFFFF',
-        borderRadius: '16px',
-        minHeight: '100%',
-      } : {})
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '16px 0' : '32px 24px' }}>
+      {/* Header - 항상 흰색 박스 밖 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: isMobile ? '0 12px' : '0' }}>
         <button
           onClick={() => navigate(`/gatherings/${id}`)}
           style={{
@@ -247,6 +238,17 @@ export default function MemberManagePage() {
           멤버 관리
         </h1>
       </div>
+
+      {/* 탭 + 콘텐츠: 모바일에서만 흰색 박스 */}
+      <div style={{
+        ...(isMobile ? {
+          width: '90%',
+          margin: '0 auto',
+          background: '#FFFFFF',
+          borderRadius: '16px',
+          padding: '16px 12px',
+        } : {})
+      }}>
 
       {/* Tab Navigation */}
       <div style={{
@@ -455,6 +457,7 @@ export default function MemberManagePage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
