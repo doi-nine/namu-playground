@@ -177,7 +177,7 @@ export default function UserProfilePage() {
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
-              border: '2px solid #6B9080',
+              border: '1.6px solid #6B9080',
               borderRadius: '10px',
               background: '#FFFFFF',
               cursor: myProfile?.is_premium ? 'pointer' : 'default',
@@ -192,10 +192,29 @@ export default function UserProfilePage() {
             </span>
           </div>
           <button
+            onClick={() => navigate(`/users/${userId}/history`)}
+            style={{
+              padding: '8px 16px',
+              border: '1.6px solid #6B9080',
+              borderRadius: '10px',
+              background: '#FFFFFF',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+          >
+            이력
+          </button>
+          <button
             onClick={() => navigate(-1)}
             style={{
               padding: '8px 16px',
-              border: '2px solid #6B9080',
+              border: '1.6px solid #6B9080',
               borderRadius: '10px',
               background: '#FFFFFF',
               cursor: 'pointer',

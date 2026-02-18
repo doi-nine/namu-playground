@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Search, RefreshCw, Sparkles } from 'lucide-react';
+import { Search, RefreshCw, Sparkles, Star } from 'lucide-react';
 import { AVAILABLE_TAGS } from '../constants/tags';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useBookmarks } from '../context/BookmarkContext';
 
 export default function GatheringListPage() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function GatheringListPage() {
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const { isBookmarked, toggleBookmark } = useBookmarks();
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -125,7 +127,7 @@ export default function GatheringListPage() {
     setIsGeneratingAI(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-recommend', {
-        body: { profile, gatherings }
+        body: { profile, userId: user.id }
       });
 
       if (error) throw error;
@@ -428,6 +430,22 @@ export default function GatheringListPage() {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
+                {/* 별 즐겨찾기 버튼 */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleBookmark(gathering.id, gathering.title); }}
+                  style={{
+                    position: 'absolute', top: '16px', right: '16px',
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+                    borderRadius: '6px', transition: 'background-color 0.2s',
+                  }}
+                >
+                  <Star
+                    size={18}
+                    fill={isBookmarked(gathering.id) ? 'var(--button-primary)' : 'none'}
+                    color="var(--button-primary)"
+                  />
+                </button>
+
                 {/* 제목 (하이라이트 배경) */}
                 <h4 style={{
                   fontSize: isMobile ? '19px' : '17px',
@@ -435,6 +453,7 @@ export default function GatheringListPage() {
                   color: 'var(--button-primary)',
                   margin: '0 0 6px 0',
                   lineHeight: 1.3,
+                  paddingRight: '28px',
                 }}>
                   {gathering.title}
                 </h4>

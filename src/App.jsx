@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { BookmarkProvider } from './context/BookmarkContext'
 import LoginPage from './pages/LoginPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
 import MyPage from './pages/MyPage'
@@ -22,6 +23,9 @@ import PopularityPage from './pages/PopularityPage';
 import UserProfilePage from './pages/UserProfilePage';
 import EmailVerifyPage from './pages/EmailVerifyPage';
 import SupportPage from './pages/SupportPage';
+import BookmarksPage from './pages/BookmarksPage';
+import GatheringHistoryPage from './pages/GatheringHistoryPage';
+import UserHistoryPage from './pages/UserHistoryPage';
 
 function AppLayout({ children }) {
   return (
@@ -34,6 +38,7 @@ function AppLayout({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <BookmarkProvider>
       <div className="app-bg" style={{
         minHeight: '100vh',
         background: `
@@ -69,8 +74,12 @@ export default function App() {
         <Route path="/premium/success" element={<AppLayout><PremiumSuccessPage /></AppLayout>} />
         <Route path="/users/:userId" element={<AppLayout><UserProfilePage /></AppLayout>} />
         <Route path="/support" element={<AppLayout><SupportPage /></AppLayout>} />
+        <Route path="/my/bookmarks" element={<AppLayout><BookmarksPage /></AppLayout>} />
+        <Route path="/my/history" element={<AppLayout><GatheringHistoryPage /></AppLayout>} />
+        <Route path="/users/:userId/history" element={<AppLayout><UserHistoryPage /></AppLayout>} />
       </Routes>
       </div>
+      </BookmarkProvider>
     </AuthProvider>
   )
 }

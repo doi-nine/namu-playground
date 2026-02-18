@@ -6,8 +6,9 @@ import {
   Home, Search, Plus, List, User,
   Bell, LogOut, HelpCircle,
   ChevronRight, ChevronLeft, ChevronDown,
-  Settings, Sparkles
+  Settings, Sparkles, Star
 } from 'lucide-react';
+import { useBookmarks } from '../context/BookmarkContext';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ export default function Layout({ children }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [myGatheringsOpen, setMyGatheringsOpen] = useState(false);
   const [myGatherings, setMyGatherings] = useState([]);
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const { bookmarks } = useBookmarks();
 
   const handleSidebarToggle = () => {
     setIsTransitioning(true);
@@ -527,6 +530,139 @@ export default function Layout({ children }) {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 즐겨찾기 드롭다운 */}
+          <div>
+            <button
+              onClick={() => {
+                if (sidebarOpen) {
+                  setBookmarksOpen(prev => !prev);
+                } else {
+                  navigate('/my/bookmarks');
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: sidebarOpen ? '12px 16px' : '12px 0',
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                background: isActive('/my/bookmarks') ? 'rgba(255,255,255,0.3)' : 'transparent',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                width: '100%',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive('/my/bookmarks')) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive('/my/bookmarks')) e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <Star
+                size={20}
+                color={isActive('/my/bookmarks') ? 'var(--text-primary)' : 'var(--text-secondary)'}
+                strokeWidth={isActive('/my/bookmarks') ? 2.2 : 1.8}
+              />
+              {sidebarOpen && (
+                <>
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: isActive('/my/bookmarks') ? '600' : '500',
+                    color: isActive('/my/bookmarks') ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    whiteSpace: 'nowrap',
+                    flex: 1,
+                    textAlign: 'left',
+                  }}>
+                    즐겨찾기
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    color="var(--text-muted)"
+                    style={{
+                      transition: 'transform 0.2s',
+                      transform: bookmarksOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      flexShrink: 0,
+                    }}
+                  />
+                </>
+              )}
+            </button>
+
+            {sidebarOpen && (
+              <div style={{
+                maxHeight: bookmarksOpen ? `${Math.max(bookmarks.length, 1) * 40 + 16}px` : '0px',
+                overflow: 'hidden',
+                transition: 'max-height 0.25s ease-in-out',
+                paddingLeft: '16px',
+                paddingRight: '4px',
+              }}>
+                <div style={{ paddingTop: '4px', paddingBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  {bookmarks.length === 0 ? (
+                    <p style={{
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      padding: '8px 12px',
+                      margin: 0,
+                    }}>
+                      즐겨찾기한 모임이 없습니다
+                    </p>
+                  ) : (
+                    bookmarks.map(gathering => {
+                      const gatheringPath = `/gatherings/${gathering.id}`;
+                      const active = isActive(gatheringPath);
+                      return (
+                        <button
+                          key={gathering.id}
+                          onClick={() => navigate(gatheringPath)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            background: active ? 'rgba(255,255,255,0.3)' : 'transparent',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            width: '100%',
+                            fontFamily: 'inherit',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!active) e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <span style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: active ? 'var(--button-primary)' : 'var(--text-muted)',
+                            flexShrink: 0,
+                          }} />
+                          <span style={{
+                            fontSize: '13px',
+                            fontWeight: active ? '500' : '400',
+                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {gathering.title}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}

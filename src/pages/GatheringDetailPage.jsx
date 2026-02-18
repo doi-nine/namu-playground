@@ -3,8 +3,11 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import ChatTab from '../components/ChatTab';
+import BoardTab from '../components/BoardTab';
 import ToolsTab from '../components/ToolsTab';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { Star } from 'lucide-react';
+import { useBookmarks } from '../context/BookmarkContext';
 
 export default function GatheringDetailPage() {
   const { user: authUser, profile } = useAuth();
@@ -613,6 +616,7 @@ export default function GatheringDetailPage() {
     );
   }
 
+  const { isBookmarked, toggleBookmark } = useBookmarks();
   const isCreator = currentUser && gathering.creator_id === currentUser.id;
   const nonCreatorMembers = members.filter(m => m.user_id !== gathering.creator_id);
   const actualMemberCount = nonCreatorMembers.length + (creator ? 1 : 0);
@@ -629,8 +633,30 @@ export default function GatheringDetailPage() {
     <div style={{ maxWidth: '800px', margin: '0 auto', ...(isMobile ? { width: '93%' } : {}) }}>
       {/* Main Card */}
       <div style={{ padding: isMobile ? '12px 4px' : '28px 4px' }}>
-        {/* Edit Button */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '12px' }}>
+        {/* 즐겨찾기 + 관리/수정 버튼 영역 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', marginBottom: '12px' }}>
+          {/* 즐겨찾기 별 버튼 */}
+          <button
+            onClick={() => toggleBookmark(id, gathering.title)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: '8px',
+              transition: 'background-color 0.2s',
+            }}
+          >
+            <Star
+              size={22}
+              fill={isBookmarked(id) ? 'var(--button-primary)' : 'none'}
+              color="var(--button-primary)"
+            />
+          </button>
+
+          {/* 관리/수정 버튼 (모임장만) */}
           {isCreator && (
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -731,6 +757,7 @@ export default function GatheringDetailPage() {
             { key: 'info', label: '모임' },
             { key: 'notices', label: '공지' },
             { key: 'schedules', label: '일정' },
+            { key: 'board', label: '게시판' },
             { key: 'chat', label: '대화' },
             { key: 'tools', label: '도구' }
           ].map((tab) => (
@@ -749,6 +776,7 @@ export default function GatheringDetailPage() {
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
+                outline: 'none',
               }}
             >
               {tab.label}
@@ -1459,6 +1487,22 @@ export default function GatheringDetailPage() {
             </div>
           ) : (
             <ChatTab
+              gatheringId={id}
+              memberStatus={memberStatus}
+              isCreator={gathering?.creator_id === currentUser?.id}
+            />
+          )
+        )}
+
+        {activeTab === 'board' && (
+          !isApprovedMember ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+              <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>모임에 가입하면 게시판을 이용할 수 있습니다.</p>
+            </div>
+          ) : (
+            <BoardTab
               gatheringId={id}
               memberStatus={memberStatus}
               isCreator={gathering?.creator_id === currentUser?.id}
