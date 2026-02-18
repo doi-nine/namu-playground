@@ -278,6 +278,9 @@ export default function UserProfilePage() {
               {profile?.location && (
                 <p style={{ margin: '0 0 6px 0' }}>지역: {profile.location}</p>
               )}
+              {profile?.favorite_game_categories?.length > 0 && (
+                <p style={{ margin: '0 0 6px 0' }}>좋아하는 것: {profile.favorite_game_categories.join(', ')}</p>
+              )}
               {profile?.bio && (
                 <p style={{ margin: '12px 0 0 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {profile.bio.substring(0, 500)}
