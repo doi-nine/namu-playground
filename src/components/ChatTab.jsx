@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import PremiumModal from './PremiumModal';
 
 export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
     const { profile, refreshProfile } = useAuth();
@@ -18,6 +19,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
     const [showSummaryModal, setShowSummaryModal] = useState(false);
     const [summaryText, setSummaryText] = useState('');
     const [summaryRemaining, setSummaryRemaining] = useState(null);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
 
     const canChat = memberStatus === 'approved' || isCreator;
 
@@ -130,7 +132,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
         if (!profile?.is_premium) {
             const left = summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3);
             if (left <= 0) {
-                alert('이번 달 무료 채팅 요약 횟수를 모두 사용했습니다. 프리미엄으로 업그레이드하면 무제한으로 이용할 수 있어요!');
+                setShowPremiumModal(true);
                 return;
             }
         }
@@ -543,6 +545,7 @@ export default function ChatTab({ gatheringId, memberStatus, isCreator }) {
                     </div>
                 </div>
             )}
+            <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
         </div>
     );
 }

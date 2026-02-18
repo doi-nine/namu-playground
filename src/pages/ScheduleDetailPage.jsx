@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import PremiumModal from '../components/PremiumModal';
 
 export default function ScheduleDetailPage() {
   const { id, scheduleId } = useParams();
@@ -38,6 +39,7 @@ export default function ScheduleDetailPage() {
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [summaryText, setSummaryText] = useState('');
   const [summaryRemaining, setSummaryRemaining] = useState(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const evalKeywordTypes = [
     { id: 'kind', label: '정말 친절해요' },
@@ -278,7 +280,7 @@ export default function ScheduleDetailPage() {
     if (!profile?.is_premium) {
       const left = summaryRemaining !== null ? summaryRemaining : (profile?.ai_chat_summary_left ?? 3);
       if (left <= 0) {
-        alert('이번 달 무료 채팅 요약 횟수를 모두 사용했습니다. 프리미엄으로 업그레이드하면 무제한으로 이용할 수 있어요!');
+        setShowPremiumModal(true);
         return;
       }
     }
@@ -957,6 +959,8 @@ export default function ScheduleDetailPage() {
           </div>
         </div>
       )}
+
+      <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
 
       {/* 평가 모달 */}
       {showEval && (
