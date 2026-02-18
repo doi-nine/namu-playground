@@ -26,6 +26,7 @@ import SupportPage from './pages/SupportPage';
 import BookmarksPage from './pages/BookmarksPage';
 import GatheringHistoryPage from './pages/GatheringHistoryPage';
 import UserHistoryPage from './pages/UserHistoryPage';
+import LandingPage from './pages/LandingPage';
 
 function AppLayout({ children }) {
   return (
@@ -42,11 +43,11 @@ export default function App() {
       <div className="app-bg" style={{
         minHeight: '100vh',
         background: `
-          radial-gradient(ellipse at 15% 20%, rgba(254, 249, 195, 0.35), transparent 45%),
-          radial-gradient(ellipse at 85% 80%, rgba(253, 224, 71, 0.25), transparent 50%),
-          radial-gradient(ellipse at 60% 10%, rgba(254, 240, 138, 0.3), transparent 40%),
-          radial-gradient(ellipse at 40% 90%, rgba(253, 230, 138, 0.2), transparent 45%),
-          linear-gradient(135deg, #A8B8A5, #B0BFA9 50%, #B5C4B1)
+          radial-gradient(ellipse at 15% 20%, rgba(256, 251, 180, 0.35), transparent 45%),
+          radial-gradient(ellipse at 85% 80%, rgba(255, 229, 51, 0.25), transparent 50%),
+          radial-gradient(ellipse at 60% 10%, rgba(256, 242, 120, 0.3), transparent 40%),
+          radial-gradient(ellipse at 40% 90%, rgba(255, 233, 120, 0.2), transparent 45%),
+          linear-gradient(135deg, #97a899, #9fb0a3 50%, #a4b9a5)
         `,
       }}>
       <Routes>
@@ -54,7 +55,8 @@ export default function App() {
         <Route path="/verify-email" element={<EmailVerifyPage />} />
         <Route path="/profile/setup" element={<ProfileSetupPage />} />
 
-        <Route path="/" element={<Navigate to="/gatherings" replace />} />
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/" element={<Navigate to="/landing" replace />} />
         <Route path="/my/settings" element={<AppLayout><MyPage /></AppLayout>} />
         <Route path="/my-gatherings" element={<AppLayout><MyPage /></AppLayout>} />
         <Route path="/gathering/create" element={<AppLayout><CreateGatheringPage /></AppLayout>} />
