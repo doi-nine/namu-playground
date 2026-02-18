@@ -376,7 +376,7 @@ export default function ScheduleDetailPage() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px 100px' : '28px 4px 100px', ...(isMobile ? { width: '93%' } : {}) }}>
       {/* 헤더 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '8px' : '20px', padding: '0 4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '0px' : '20px', padding: '0 4px' }}>
         <button
           onClick={() => navigate(`/gatherings/${id}`, { state: { tab: 'schedules' } })}
           style={{
