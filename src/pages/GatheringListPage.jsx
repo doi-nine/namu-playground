@@ -406,7 +406,7 @@ export default function GatheringListPage() {
       <div className="glass" style={{
         borderRadius: '16px',
         overflow: 'hidden',
-        ...(isMobile ? { background: 'linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6))' } : {}),
+        ...(isMobile ? { background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8))' } : {}),
       }}>
         {filteredGatherings.length === 0 ? (
           <div style={{
