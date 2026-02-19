@@ -79,8 +79,10 @@ export default function CreateSchedulePage() {
     setIsGenerating(true);
     setAiError('');
     try {
+      const now = new Date();
+      const currentDate = now.toISOString().slice(0, 10);
       const { data, error } = await supabase.functions.invoke('ai-generate-schedule', {
-        body: { prompt: aiInput },
+        body: { prompt: aiInput, currentDate },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -91,6 +93,7 @@ export default function CreateSchedulePage() {
         ...prev,
         title: data.title || '',
         description: data.description || '',
+        ...(data.datetime ? { datetime: data.datetime } : {}),
       }));
     } catch (err) {
       console.error('AI 생성 오류:', err);
