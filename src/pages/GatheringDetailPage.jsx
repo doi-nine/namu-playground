@@ -1296,13 +1296,7 @@ export default function GatheringDetailPage() {
         {/* ─── 일정 탭 ─── */}
         {activeTab === 'schedules' && (
           <div>
-            {!isApprovedMember ? (
-              <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
-                <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
-                <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>모임에 가입하면 일정을 확인할 수 있습니다.</p>
-              </div>
-            ) : (<>{isApprovedMember && (
+            <>{isApprovedMember && (
               <div style={{ marginBottom: '16px' }}>
                 <button
                   onClick={() => navigate(`/gatherings/${id}/schedules/create`)}
@@ -1474,7 +1468,7 @@ export default function GatheringDetailPage() {
                 })}
               </div>
             )}
-            </>)}
+            </>
           </div>
         )}
 
