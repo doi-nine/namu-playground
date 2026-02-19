@@ -138,7 +138,8 @@ export default function ProfileSetupPage() {
       setScrollTarget('nickname');
       return;
     }
-    if (favoriteGameCategories.length === 0) {
+    // 수동 모드에서만 카테고리 필수 검증 (AI 모드는 AI가 자동 생성)
+    if (mode === 'manual' && favoriteGameCategories.length === 0) {
       setCategoriesError('하고 싶은 것을 최소 1개 이상 추가해주세요.');
       setStep(1);
       setScrollTarget('categories');
