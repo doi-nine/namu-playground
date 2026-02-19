@@ -171,6 +171,22 @@ export default function LandingPage() {
   const ctaRef = useRef(null)
   const scrollProgress = useScrollProgress()
 
+  // 모바일 전역 CSS(html,body overflow:hidden)를 랜딩페이지에서만 해제
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    html.style.overflow = 'auto'
+    html.style.height = 'auto'
+    body.style.overflow = 'auto'
+    body.style.height = 'auto'
+    return () => {
+      html.style.overflow = ''
+      html.style.height = ''
+      body.style.overflow = ''
+      body.style.height = ''
+    }
+  }, [])
+
   const scrollToProblems = () => {
     problemsRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
