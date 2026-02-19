@@ -14,6 +14,8 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
   const [submitting, setSubmitting] = useState(false);
   const [zoomedImage, setZoomedImage] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editContent, setEditContent] = useState('');
   const fileInputRef = useRef(null);
 
   const canWrite = memberStatus === 'approved' || isCreator;
@@ -118,6 +120,33 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
       alert('게시글 작성에 실패했습니다.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditStart = (post) => {
+    setEditingId(post.id);
+    setEditContent(post.content || '');
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const handleEditSave = async (postId) => {
+    if (!editContent.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('board_posts')
+        .update({ content: editContent.trim() })
+        .eq('id', postId);
+      if (error) throw error;
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, content: editContent.trim() } : p));
+      setEditingId(null);
+      setEditContent('');
+    } catch (error) {
+      console.error('게시글 수정 실패:', error);
+      alert('게시글 수정에 실패했습니다.');
     }
   };
 
@@ -311,6 +340,7 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
         posts.map((post) => {
           const isMyPost = post.user_id === authUser?.id;
           const canDelete = isMyPost || isCreator;
+          const isEditing = editingId === post.id;
 
           return (
             <div
@@ -321,7 +351,7 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
                 borderRadius: '14px',
               }}
             >
-              {/* 헤더: 작성자 + 시간 + 삭제 */}
+              {/* 헤더: 작성자 + 시간 + 수정/삭제 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{
@@ -351,40 +381,117 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
                   </span>
                 </div>
 
-                {canDelete && (
-                  <button
-                    onClick={() => handleDelete(post)}
-                    disabled={deletingId === post.id}
-                    style={{
-                      padding: '4px 10px',
-                      background: 'none',
-                      border: '1px solid rgba(220,38,38,0.2)',
-                      borderRadius: '6px',
-                      color: 'var(--danger, #dc2626)',
-                      fontSize: '12px',
-                      cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
-                      opacity: deletingId === post.id ? 0.5 : 1,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {deletingId === post.id ? '삭제 중' : '삭제'}
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isMyPost && !isEditing && (
+                    <button
+                      onClick={() => handleEditStart(post)}
+                      style={{
+                        padding: '4px 10px',
+                        background: 'none',
+                        border: '1px solid rgba(107,144,128,0.3)',
+                        borderRadius: '6px',
+                        color: 'var(--button-primary)',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      수정
+                    </button>
+                  )}
+                  {canDelete && !isEditing && (
+                    <button
+                      onClick={() => handleDelete(post)}
+                      disabled={deletingId === post.id}
+                      style={{
+                        padding: '4px 10px',
+                        background: 'none',
+                        border: '1px solid rgba(220,38,38,0.2)',
+                        borderRadius: '6px',
+                        color: 'var(--danger, #dc2626)',
+                        fontSize: '12px',
+                        cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                        opacity: deletingId === post.id ? 0.5 : 1,
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {deletingId === post.id ? '삭제 중' : '삭제'}
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* 본문 */}
-              {post.content && (
-                <p style={{
-                  fontSize: '14px',
-                  lineHeight: '1.7',
-                  color: 'var(--text-primary)',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  margin: 0,
-                  marginBottom: post.image_url ? '12px' : 0,
-                }}>
-                  {post.content}
-                </p>
+              {/* 본문 또는 편집 UI */}
+              {isEditing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(255,255,255,0.7)',
+                      border: '1px solid var(--button-primary)',
+                      borderRadius: '10px',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      resize: 'vertical',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                      boxShadow: '0 0 0 3px rgba(107,144,128,0.15)',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => handleEditSave(post.id)}
+                      disabled={!editContent.trim()}
+                      style={{
+                        padding: '6px 16px',
+                        backgroundColor: editContent.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
+                        color: editContent.trim() ? 'white' : 'var(--text-muted)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        cursor: editContent.trim() ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      저장
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      style={{
+                        padding: '6px 16px',
+                        backgroundColor: 'rgba(0,0,0,0.06)',
+                        color: 'var(--text-secondary)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                post.content && (
+                  <p style={{
+                    fontSize: '14px',
+                    lineHeight: '1.7',
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    margin: 0,
+                    marginBottom: post.image_url ? '12px' : 0,
+                  }}>
+                    {post.content}
+                  </p>
+                )
               )}
 
               {/* 이미지 */}

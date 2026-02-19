@@ -32,6 +32,8 @@ export default function GatheringDetailPage() {
   const [noticeSubmitting, setNoticeSubmitting] = useState(false);
   const [showNoticeForm, setShowNoticeForm] = useState(false);
   const [noticeFocused, setNoticeFocused] = useState(null);
+  const [editingNoticeId, setEditingNoticeId] = useState(null);
+  const [editNoticeForm, setEditNoticeForm] = useState({ title: '', content: '' });
 
   // 일정 관련 state
   const [schedules, setSchedules] = useState([]);
@@ -161,6 +163,35 @@ export default function GatheringDetailPage() {
       alert('공지 작성 중 오류가 발생했습니다: ' + err.message);
     } finally {
       setNoticeSubmitting(false);
+    }
+  };
+
+  const handleEditNoticeStart = (notice) => {
+    setEditingNoticeId(notice.id);
+    setEditNoticeForm({ title: notice.title || '', content: notice.content || '' });
+  };
+
+  const handleEditNoticeCancel = () => {
+    setEditingNoticeId(null);
+    setEditNoticeForm({ title: '', content: '' });
+  };
+
+  const handleUpdateNotice = async () => {
+    if (!editNoticeForm.content.trim()) { alert('공지 내용을 입력해주세요.'); return; }
+    try {
+      const { error } = await supabase.from('notices').update({
+        title: editNoticeForm.title.trim() || null,
+        content: editNoticeForm.content.trim(),
+      }).eq('id', editingNoticeId);
+      if (error) throw error;
+      setNotices(prev => prev.map(n => n.id === editingNoticeId
+        ? { ...n, title: editNoticeForm.title.trim() || null, content: editNoticeForm.content.trim() }
+        : n
+      ));
+      setEditingNoticeId(null);
+      setEditNoticeForm({ title: '', content: '' });
+    } catch (err) {
+      alert('공지 수정 중 오류가 발생했습니다: ' + err.message);
     }
   };
 
@@ -1240,7 +1271,9 @@ export default function GatheringDetailPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {notices.map((notice) => (
+                {notices.map((notice) => {
+                  const isEditingThis = editingNoticeId === notice.id;
+                  return (
                   <div
                     key={notice.id}
                     style={{
@@ -1256,37 +1289,110 @@ export default function GatheringDetailPage() {
                           fontSize: '11px', padding: '2px 8px', borderRadius: '6px',
                           backgroundColor: 'rgba(107,144,128,0.15)', color: 'var(--button-primary)', fontWeight: '600',
                         }}>공지</span>
-                        {notice.title && (
+                        {!isEditingThis && notice.title && (
                           <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                             {notice.title}
                           </h3>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                          {new Date(notice.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                        </span>
-                        {isCreator && (
-                          <button
-                            onClick={() => handleDeleteNotice(notice.id)}
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer',
-                              fontSize: '13px', color: 'var(--text-muted)', padding: '2px 6px',
-                              borderRadius: '6px', transition: 'color 0.2s',
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger)'}
-                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                          >
-                            삭제
-                          </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        {!isEditingThis && (
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {new Date(notice.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                          </span>
+                        )}
+                        {isCreator && !isEditingThis && (
+                          <>
+                            <button
+                              onClick={() => handleEditNoticeStart(notice)}
+                              style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                fontSize: '13px', color: 'var(--button-primary)', padding: '2px 6px',
+                                borderRadius: '6px', transition: 'color 0.2s',
+                              }}
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNotice(notice.id)}
+                              style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                fontSize: '13px', color: 'var(--text-muted)', padding: '2px 6px',
+                                borderRadius: '6px', transition: 'color 0.2s',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger)'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                            >
+                              삭제
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
-                    <p style={{ fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.7', margin: 0 }}>
-                      {notice.content}
-                    </p>
+                    {isEditingThis ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <input
+                          type="text"
+                          placeholder="제목 (선택)"
+                          value={editNoticeForm.title}
+                          onChange={(e) => setEditNoticeForm(prev => ({ ...prev, title: e.target.value }))}
+                          style={{
+                            width: '100%', padding: '10px 14px', fontSize: '14px',
+                            border: '1px solid var(--button-primary)',
+                            borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.7)',
+                            color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box',
+                            boxShadow: '0 0 0 3px rgba(107,144,128,0.15)',
+                          }}
+                        />
+                        <textarea
+                          placeholder="공지 내용을 입력하세요 *"
+                          value={editNoticeForm.content}
+                          onChange={(e) => setEditNoticeForm(prev => ({ ...prev, content: e.target.value }))}
+                          rows={4}
+                          style={{
+                            width: '100%', padding: '10px 14px', fontSize: '14px',
+                            border: '1px solid var(--button-primary)',
+                            borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.7)',
+                            color: 'var(--text-primary)', outline: 'none', resize: 'none', boxSizing: 'border-box',
+                            boxShadow: '0 0 0 3px rgba(107,144,128,0.15)',
+                          }}
+                        />
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={handleUpdateNotice}
+                            disabled={!editNoticeForm.content.trim()}
+                            style={{
+                              padding: '8px 18px',
+                              backgroundColor: editNoticeForm.content.trim() ? 'var(--button-primary)' : 'rgba(0,0,0,0.06)',
+                              color: editNoticeForm.content.trim() ? 'white' : 'var(--text-muted)',
+                              borderRadius: '10px', border: 'none',
+                              cursor: editNoticeForm.content.trim() ? 'pointer' : 'not-allowed',
+                              fontWeight: '600', fontSize: '13px',
+                            }}
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={handleEditNoticeCancel}
+                            style={{
+                              padding: '8px 18px',
+                              backgroundColor: 'rgba(0,0,0,0.06)', color: 'var(--text-secondary)',
+                              borderRadius: '10px', border: 'none', cursor: 'pointer',
+                              fontWeight: '500', fontSize: '13px',
+                            }}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.7', margin: 0 }}>
+                        {notice.content}
+                      </p>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             </>)}
