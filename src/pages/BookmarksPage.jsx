@@ -59,7 +59,7 @@ export default function BookmarksPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '93%' } : {}) }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '97%' } : {}) }}>
       <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <Star size={20} color="var(--button-primary)" fill="var(--button-primary)" />
         즐겨찾기

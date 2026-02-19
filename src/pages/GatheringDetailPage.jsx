@@ -630,7 +630,7 @@ export default function GatheringDetailPage() {
   });
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', ...(isMobile ? { width: '93%' } : {}) }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', ...(isMobile ? { width: '97%' } : {}) }}>
       {/* Main Card */}
       <div style={{ padding: isMobile ? '12px 4px' : '28px 4px' }}>
         {/* 즐겨찾기 + 관리/수정 버튼 영역 */}

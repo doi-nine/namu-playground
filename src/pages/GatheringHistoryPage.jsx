@@ -234,7 +234,7 @@ export default function GatheringHistoryPage() {
     <div style={{
       maxWidth: '700px', margin: '0 auto',
       padding: isMobile ? '12px 4px' : '32px 24px',
-      ...(isMobile ? { width: '93%' } : {}),
+      ...(isMobile ? { width: '97%' } : {}),
     }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>

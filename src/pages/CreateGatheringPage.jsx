@@ -288,7 +288,7 @@ export default function CreateGatheringPage() {
     );
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px 80px' : '32px 24px 100px', ...(isMobile ? { width: '93%' } : {}) }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px 80px' : '32px 24px 100px', ...(isMobile ? { width: '97%' } : {}) }}>
             {/* 페이지 타이틀 */}
             <h1 style={{
                 fontSize: '24px',

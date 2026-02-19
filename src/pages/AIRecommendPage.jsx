@@ -91,7 +91,7 @@ export default function AIRecommendPage() {
     }
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '93%' } : {}) }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '12px 4px' : '32px 24px', ...(isMobile ? { width: '97%' } : {}) }}>
 
             {/* 헤더 */}
             <div style={{ marginBottom: '20px' }}>

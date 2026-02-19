@@ -290,7 +290,7 @@ export default function MemberManagePage() {
       {/* 탭 + 콘텐츠: 모바일에서만 흰색 박스 */}
       <div style={{
         ...(isMobile ? {
-          width: '93%',
+          width: '97%',
           margin: '0 auto',
           background: '#FFFFFF',
           borderRadius: '16px',
