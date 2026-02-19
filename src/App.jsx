@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { BookmarkProvider } from './context/BookmarkContext'
+import { ToastProvider } from './components/Toast'
 import LoginPage from './pages/LoginPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
 import MyPage from './pages/MyPage'
@@ -40,6 +41,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BookmarkProvider>
+      <ToastProvider>
       <div className="app-bg" style={{
         minHeight: '100vh',
         background: `
@@ -81,6 +83,7 @@ export default function App() {
         <Route path="/users/:userId/history" element={<AppLayout><UserHistoryPage /></AppLayout>} />
       </Routes>
       </div>
+      </ToastProvider>
       </BookmarkProvider>
     </AuthProvider>
   )

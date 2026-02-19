@@ -1,21 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useToast } from '../components/Toast';
 
 export default function MyPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const { showToast } = useToast();
   const [createdGatherings, setCreatedGatherings] = useState([]);
   const [joinedGatherings, setJoinedGatherings] = useState([]);
   const [pendingGatherings, setPendingGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const warningChecked = useRef(false);
 
   useEffect(() => {
     if (user) {
       fetchMyGatherings();
+
+      if (!warningChecked.current) {
+        warningChecked.current = true;
+
+        // 경고 분석 트리거 (fire-and-forget)
+        supabase.functions.invoke('ai-manner-check-chat', { body: {} }).catch(() => {});
+
+        // 읽지 않은 경고 조회 → 토스트 표시
+        supabase
+          .from('ai_manner_warnings')
+          .select('id, warning_message')
+          .eq('user_id', user.id)
+          .eq('is_read', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              const warning = data[0];
+              showToast({
+                message: warning.warning_message,
+                type: 'warning',
+                duration: 8000,
+                onDismiss: () => {
+                  supabase
+                    .from('ai_manner_warnings')
+                    .update({ is_read: true })
+                    .eq('id', warning.id)
+                    .then(() => {});
+                },
+              });
+            }
+          });
+      }
     }
   }, [user]);
 

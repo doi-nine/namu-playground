@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 
+const TAG_ICONS = { punctual: '⏰', organizer: '🏠', veteran: '🌱', communicator: '💬' };
+
 const voteTypes = [
     { id: 'kind', label: '정말 친절해요', emoji: '😊' },
     { id: 'friendly', label: '친화력이 좋아요', emoji: '🤝' },
@@ -34,6 +36,7 @@ export default function PopularityPage() {
     const [totalVoteCount, setTotalVoteCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [targetNickname, setTargetNickname] = useState(null);
+    const [aiTags, setAiTags] = useState([]);
 
     // 다른 유저를 보는 경우
     const isViewingOther = paramUserId && paramUserId !== user?.id;
@@ -98,6 +101,23 @@ export default function PopularityPage() {
                 .in('vote_type', ['thumbs_up', 'thumbs_down']);
 
             setTotalVoteCount(count || 0);
+
+            // AI 매너 태그 조회
+            const { data: tagData } = await supabase
+                .from('ai_manner_tags')
+                .select('tag_type, tag_label, assigned_at')
+                .eq('user_id', targetUserId);
+
+            setAiTags(tagData || []);
+
+            // 자기 프로필 조회 시 태그 분석 트리거 (fire-and-forget)
+            if (!isViewingOther) {
+                supabase.functions.invoke('ai-manner-tags', {
+                    body: {},
+                }).then(({ data }) => {
+                    if (data?.tags) setAiTags(data.tags);
+                }).catch(() => {});
+            }
         } catch (err) {
             console.error('매너도 데이터 로드 오류:', err);
         } finally {
@@ -190,6 +210,46 @@ export default function PopularityPage() {
                     총 {totalVotes}개의 평가를 받았어요
                 </p>
             </div>
+
+            {/* AI 매너 태그 */}
+            {aiTags.length > 0 && (
+                <div className="glass" style={{
+                    borderRadius: '16px',
+                    padding: '20px 24px',
+                    marginBottom: '16px',
+                }}>
+                    <h2 style={{
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        color: 'var(--text-primary)',
+                        marginBottom: '14px',
+                    }}>
+                        AI가 이렇게 평가했어요
+                    </h2>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {aiTags.map(tag => (
+                            <span
+                                key={tag.tag_type}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    background: 'rgba(107, 144, 128, 0.12)',
+                                    border: '1px solid rgba(107, 144, 128, 0.25)',
+                                    color: 'var(--button-primary)',
+                                    borderRadius: '20px',
+                                    padding: '8px 14px',
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                }}
+                            >
+                                <span>{TAG_ICONS[tag.tag_type] || '🏷️'}</span>
+                                {tag.tag_label}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* 항목별 상세 */}
             <div className="glass" style={{

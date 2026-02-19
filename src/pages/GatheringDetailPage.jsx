@@ -8,6 +8,8 @@ import ToolsTab from '../components/ToolsTab';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Star } from 'lucide-react';
 import { useBookmarks } from '../context/BookmarkContext';
+import { useToast } from '../components/Toast';
+import ReviewModal from '../components/ReviewModal';
 
 export default function GatheringDetailPage() {
   const { user: authUser, profile } = useAuth();
@@ -16,6 +18,7 @@ export default function GatheringDetailPage() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { isBookmarked, toggleBookmark } = useBookmarks();
+  const { showToast } = useToast();
   const [gathering, setGathering] = useState(null);
   const [creator, setCreator] = useState(null);
   const [members, setMembers] = useState([]);
@@ -51,6 +54,10 @@ export default function GatheringDetailPage() {
   const [scheduleEvalKeywords, setScheduleEvalKeywords] = useState({});
   const [scheduleEvalSubmitting, setScheduleEvalSubmitting] = useState(false);
   const [evalScheduleMembers, setEvalScheduleMembers] = useState([]);
+
+  // 일정 후기 관련 state
+  const [reviewModalSchedule, setReviewModalSchedule] = useState(null);
+  const [myReviewedScheduleIds, setMyReviewedScheduleIds] = useState({});
 
   const formatDateTime = (datetime) => {
     const date = new Date(datetime);
@@ -286,6 +293,33 @@ export default function GatheringDetailPage() {
             const evalDoneMap = {};
             (evalData || []).forEach(v => { if (v.schedule_id) evalDoneMap[v.schedule_id] = true; });
             setScheduleEvalDone(evalDoneMap);
+          }
+
+          // 후기 작성 여부 조회
+          const myCompletedParticipatedIds = completedIds.filter(sid => membershipMap[sid]);
+          if (myCompletedParticipatedIds.length > 0) {
+            const { data: reviewData } = await supabase
+              .from('schedule_reviews')
+              .select('schedule_id')
+              .eq('user_id', currentUser.id)
+              .in('schedule_id', myCompletedParticipatedIds);
+
+            const reviewedMap = {};
+            (reviewData || []).forEach(r => { reviewedMap[r.schedule_id] = true; });
+            setMyReviewedScheduleIds(reviewedMap);
+
+            // 미리뷰 일정이 있으면 토스트 표시
+            const unreviewedSchedules = (schedulesData || []).filter(
+              s => s.is_completed && membershipMap[s.id] && !reviewedMap[s.id]
+            );
+            if (unreviewedSchedules.length > 0) {
+              showToast({
+                message: '완료된 일정의 후기를 작성해주세요!',
+                type: 'info',
+                duration: 8000,
+                onDismiss: () => setReviewModalSchedule(unreviewedSchedules[0]),
+              });
+            }
           }
         }
       }
@@ -2009,6 +2043,20 @@ export default function GatheringDetailPage() {
           </div>
         </div>
       )}
+
+      {/* 일정 후기 모달 */}
+      <ReviewModal
+        isOpen={!!reviewModalSchedule}
+        onClose={() => setReviewModalSchedule(null)}
+        schedule={reviewModalSchedule}
+        gatheringId={id}
+        onSaved={() => {
+          if (reviewModalSchedule) {
+            setMyReviewedScheduleIds(prev => ({ ...prev, [reviewModalSchedule.id]: true }));
+          }
+          setReviewModalSchedule(null);
+        }}
+      />
     </div>
   );
 }
