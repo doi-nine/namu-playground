@@ -8,7 +8,7 @@ const SUB_TABS = [
   { key: 'review', label: '후기' },
 ];
 
-export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
+export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewKey }) {
   const { user: authUser } = useAuth();
   const isMobile = useIsMobile();
   const [activeSubTab, setActiveSubTab] = useState('free');
@@ -84,7 +84,7 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator }) {
     if (activeSubTab === 'review' && gatheringId) {
       fetchReviews();
     }
-  }, [activeSubTab, gatheringId]);
+  }, [activeSubTab, gatheringId, reviewKey]);
 
   const handleAIGenerate = async () => {
     if (!aiPrompt.trim() || aiGenerating) return;

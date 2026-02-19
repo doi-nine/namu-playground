@@ -58,6 +58,7 @@ export default function GatheringDetailPage() {
   // 일정 후기 관련 state
   const [reviewModalSchedule, setReviewModalSchedule] = useState(null);
   const [myReviewedScheduleIds, setMyReviewedScheduleIds] = useState({});
+  const [reviewSavedCount, setReviewSavedCount] = useState(0);
 
   const formatDateTime = (datetime) => {
     const date = new Date(datetime);
@@ -1722,6 +1723,7 @@ export default function GatheringDetailPage() {
               gatheringId={id}
               memberStatus={memberStatus}
               isCreator={gathering?.creator_id === currentUser?.id}
+              reviewKey={reviewSavedCount}
             />
           )
         )}
@@ -2055,6 +2057,7 @@ export default function GatheringDetailPage() {
             setMyReviewedScheduleIds(prev => ({ ...prev, [reviewModalSchedule.id]: true }));
           }
           setReviewModalSchedule(null);
+          setReviewSavedCount(prev => prev + 1);
         }}
       />
     </div>
