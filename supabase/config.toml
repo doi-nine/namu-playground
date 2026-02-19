@@ -393,10 +393,61 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/ai-generate-description/index.ts"
 
+[functions.ai-generate-notice]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-generate-notice/index.ts"
+
+[functions.ai-generate-post]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-generate-post/index.ts"
+
+[functions.ai-generate-review]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-generate-review/index.ts"
+
+[functions.ai-manner-check-chat]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-manner-check-chat/index.ts"
+
+[functions.ai-manner-tags]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-manner-tags/index.ts"
+
+[functions.ai-profile]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-profile/index.ts"
+
 [functions.ai-recommend]
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/ai-recommend/index.ts"
+
+[functions.check-premium-expiry]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/check-premium-expiry/index.ts"
+
+[functions.polar-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/polar-webhook/index.ts"
+
+[functions.recalculate-popularity]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/recalculate-popularity/index.ts"
+
+[functions.submit-eval]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/submit-eval/index.ts"
+
 [functions.polar-checkout]
 enabled = true
 verify_jwt = true
