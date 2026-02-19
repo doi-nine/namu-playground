@@ -63,16 +63,35 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
     try {
       const { data, error } = await supabase
         .from('schedule_reviews')
-        .select(`
-          *,
-          schedules:schedule_id (title, datetime, current_members),
-          profiles:user_id (nickname, custom_badge)
-        `)
+        .select('*')
         .eq('gathering_id', gatheringId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      if (!data || data.length === 0) {
+        setReviews([]);
+        return;
+      }
+
+      const scheduleIds = [...new Set(data.map(r => r.schedule_id))];
+      const userIds = [...new Set(data.map(r => r.user_id))];
+
+      const [schedulesRes, profilesRes] = await Promise.all([
+        supabase.from('schedules').select('id, title, datetime, current_members').in('id', scheduleIds),
+        supabase.from('profiles').select('id, nickname, custom_badge').in('id', userIds),
+      ]);
+
+      const schedulesMap = {};
+      (schedulesRes.data || []).forEach(s => { schedulesMap[s.id] = s; });
+
+      const profilesMap = {};
+      (profilesRes.data || []).forEach(p => { profilesMap[p.id] = p; });
+
+      setReviews(data.map(r => ({
+        ...r,
+        schedules: schedulesMap[r.schedule_id] || null,
+        profiles: profilesMap[r.user_id] || null,
+      })));
     } catch (error) {
       console.error('후기 로딩 실패:', error);
     } finally {
