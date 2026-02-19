@@ -262,7 +262,7 @@ export default function ProfileSetupPage() {
               >
                 <div style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px' }}>✨ AI로 빠르게 작성</div>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>
-                  자기소개만 쓰면 AI가 자동으로 프로필을 완성해줘요
+                  간단히 작성하면 AI가 자동으로 프로필을 완성해줘요
                 </div>
               </button>
 
