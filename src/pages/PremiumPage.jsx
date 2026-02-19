@@ -19,16 +19,11 @@ export default function PremiumPage() {
 
         setIsProcessing(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-
             const { data, error } = await supabase.functions.invoke('polar-checkout', {
                 body: {
                     user_id: user.id,
                     user_email: user.email
                 },
-                headers: {
-                    Authorization: `Bearer ${session?.access_token}`
-                }
             });
 
             if (error) throw error;

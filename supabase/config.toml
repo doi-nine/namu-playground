@@ -455,7 +455,7 @@ entrypoint = "./functions/submit-eval/index.ts"
 
 [functions.polar-checkout]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/polar-checkout/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
