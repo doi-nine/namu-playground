@@ -1,18 +1,28 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+const GUEST_ALLOWED_PREFIXES = ['/gatherings'];
 
 export default function AuthGate({ children }) {
   const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuth();
+  const location = useLocation();
+  const { user, profile, loading: authLoading, isGuest } = useAuth();
+
+  const isGuestAllowed = isGuest && GUEST_ALLOWED_PREFIXES.some(
+    prefix => location.pathname === prefix || location.pathname.startsWith(prefix + '/')
+  );
 
   useEffect(() => {
+    if (isGuestAllowed) { setChecking(false); return; }
     if (authLoading) return;
     if (!user) { navigate("/login"); return; }
     if (!profile) { navigate("/profile/setup"); return; }
     setChecking(false);
-  }, [authLoading, user, profile, navigate]);
+  }, [authLoading, user, profile, navigate, isGuestAllowed]);
+
+  if (isGuestAllowed) return children;
 
   if (authLoading || checking) {
     return (

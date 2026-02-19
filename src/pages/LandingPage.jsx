@@ -164,7 +164,7 @@ function SectionHeader({ children, headingSize }) {
 export default function LandingPage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const { user } = useAuth()
+  const { user, enterGuestMode } = useAuth()
   const problemsRef = useRef(null)
   const solutionsRef = useRef(null)
   const timelineRef = useRef(null)
@@ -290,6 +290,35 @@ export default function LandingPage() {
         >
           로그인
         </button>
+        {!user && (
+          <button
+            onClick={() => { enterGuestMode(); navigate('/gatherings'); }}
+            style={{
+              padding: '8px 18px',
+              background: 'rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.4)',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'background 0.2s, transform 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
+              e.currentTarget.style.transform = 'translateY(-1px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.25)'
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
+          >
+            둘러보기
+          </button>
+        )}
         <button
           onClick={() => setShowSupportPopup(true)}
           style={{
@@ -557,6 +586,30 @@ export default function LandingPage() {
           <div style={{ animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.1s both' }}>
             {ctaButton}
           </div>
+
+          {/* 둘러보기 링크 */}
+          {!user && (
+            <div style={{ animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.2s both', marginTop: '16px' }}>
+              <button
+                onClick={() => { enterGuestMode(); navigate('/gatherings'); }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  fontSize: isMobile ? '14px' : '15px',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '4px',
+                  transition: 'color 0.2s',
+                  outline: 'none',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+              >
+                로그인 없이 둘러보기
+              </button>
+            </div>
+          )}
 
           {/* 스크롤 힌트 */}
           <ScrollHint onClick={scrollToProblems} animationDelay="1.3s" />

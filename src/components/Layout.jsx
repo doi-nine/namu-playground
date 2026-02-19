@@ -13,7 +13,7 @@ import { useBookmarks } from '../context/BookmarkContext';
 export default function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isGuest, exitGuestMode } = useAuth();
   const [profile, setProfile] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -38,12 +38,12 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isGuest) {
       fetchProfile();
       fetchUnreadCount();
       fetchMyGatherings();
     }
-  }, [user, location.pathname]);
+  }, [user, isGuest, location.pathname]);
 
   async function fetchProfile() {
     try {
@@ -93,25 +93,39 @@ export default function Layout({ children }) {
     navigate('/login');
   }
 
+  function handleGuestLogin() {
+    exitGuestMode();
+    navigate('/login');
+  }
+
   const isActive = (path) => location.pathname === path;
 
   const sidebarWidth = sidebarOpen ? 280 : 72;
 
-  const menuItems = [
-    { path: '/profile', label: '내 프로필', icon: User },
-    { path: '/gatherings', label: '모임 검색', icon: Search },
-    { path: '/gathering/create', label: '모임 만들기', icon: Plus },
-  ];
+  const menuItems = isGuest
+    ? [
+        { path: '/gatherings', label: '모임 검색', icon: Search },
+      ]
+    : [
+        { path: '/profile', label: '내 프로필', icon: User },
+        { path: '/gatherings', label: '모임 검색', icon: Search },
+        { path: '/gathering/create', label: '모임 만들기', icon: Plus },
+      ];
 
   const isMyGatheringsActive = location.pathname.startsWith('/my/') || location.pathname.startsWith('/gatherings/');
 
-  const mobileTabItems = [
-    { path: '/gatherings', label: '모임', icon: Search },
-    { path: '/notifications', label: '알림', icon: Bell },
-    { path: '/gathering/create', label: '만들기', icon: Plus },
-    { path: '/my/settings', label: '내 모임', icon: List },
-    { path: '/profile', label: '프로필', icon: User },
-  ];
+  const mobileTabItems = isGuest
+    ? [
+        { path: '/gatherings', label: '모임', icon: Search },
+        { path: '/login', label: '로그인', icon: LogOut, isLogin: true },
+      ]
+    : [
+        { path: '/gatherings', label: '모임', icon: Search },
+        { path: '/notifications', label: '알림', icon: Bell },
+        { path: '/gathering/create', label: '만들기', icon: Plus },
+        { path: '/my/settings', label: '내 모임', icon: List },
+        { path: '/profile', label: '프로필', icon: User },
+      ];
 
   // 모바일: 전체 뷰포트를 fixed로 잡고 내부만 스크롤
   if (isMobile) {
@@ -163,7 +177,7 @@ export default function Layout({ children }) {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => item.isLogin ? handleGuestLogin() : navigate(item.path)}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -266,7 +280,7 @@ export default function Layout({ children }) {
             </span>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-            {sidebarOpen && (
+            {sidebarOpen && !isGuest && (
               <button
                 onClick={() => navigate('/notifications')}
                 style={{
@@ -405,8 +419,8 @@ export default function Layout({ children }) {
             );
           })}
 
-          {/* 내 모임 드롭다운 */}
-          <div>
+          {/* 내 모임 드롭다운 (게스트 숨김) */}
+          {!isGuest && <div>
             <button
               onClick={() => {
                 if (sidebarOpen) {
@@ -537,8 +551,10 @@ export default function Layout({ children }) {
             )}
           </div>
 
-          {/* 즐겨찾기 드롭다운 */}
-          <div>
+          }
+
+          {/* 즐겨찾기 드롭다운 (게스트 숨김) */}
+          {!isGuest && <div>
             <button
               onClick={() => {
                 if (sidebarOpen) {
@@ -668,10 +684,10 @@ export default function Layout({ children }) {
                 </div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
-        {/* 하단: 업그레이드 + 로그아웃 + 고객센터 */}
+        {/* 하단: 게스트일 때 로그인 버튼, 아니면 업그레이드 + 로그아웃 + 고객센터 */}
         <div style={{
           padding: '12px 8px',
           borderTop: '1px solid rgba(255,255,255,0.3)',
@@ -679,6 +695,34 @@ export default function Layout({ children }) {
           flexDirection: 'column',
           gap: '4px',
         }}>
+          {isGuest ? (
+            <button
+              onClick={handleGuestLogin}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: sidebarOpen ? '10px 16px' : '10px 0',
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                background: 'var(--button-primary)',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                width: '100%',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--button-primary-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--button-primary)'}
+            >
+              <LogOut size={18} color="#FFFFFF" />
+              {sidebarOpen && (
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#FFFFFF', whiteSpace: 'nowrap' }}>
+                  로그인하기
+                </span>
+              )}
+            </button>
+          ) : (<>
           {/* 무료 유저 전용 업그레이드 버튼 */}
           {profile && !profile.is_premium && (
             <button
@@ -762,6 +806,7 @@ export default function Layout({ children }) {
               </span>
             )}
           </button>
+          </>)}
         </div>
       </div>
     </div>

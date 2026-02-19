@@ -6,11 +6,12 @@ import { Search, RefreshCw, Sparkles, Star } from 'lucide-react';
 import { AVAILABLE_TAGS } from '../constants/tags';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useBookmarks } from '../context/BookmarkContext';
+import { maskNickname } from '../utils/maskNickname';
 
 export default function GatheringListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, isGuest } = useAuth();
   const hasRun = useRef(false);
   const isMobile = useIsMobile();
 
@@ -459,7 +460,7 @@ export default function GatheringListPage() {
               >
                 {/* 별 즐겨찾기 버튼 */}
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleBookmark(gathering.id, gathering.title); }}
+                  onClick={(e) => { e.stopPropagation(); if (isGuest) { navigate('/login'); return; } toggleBookmark(gathering.id, gathering.title); }}
                   style={{
                     position: 'absolute', top: '16px', right: '16px',
                     background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
@@ -495,8 +496,8 @@ export default function GatheringListPage() {
                   gap: '6px',
                   flexWrap: 'wrap',
                 }}>
-                  <span>모임장: {gathering.host?.nickname || '익명'}</span>
-                  {gathering.host?.is_premium && gathering.host?.custom_badge && (
+                  <span>모임장: {isGuest ? maskNickname(gathering.host?.nickname) : (gathering.host?.nickname || '익명')}</span>
+                  {!isGuest && gathering.host?.is_premium && gathering.host?.custom_badge && (
                     <span style={{
                       padding: '1px 6px',
                       borderRadius: '4px',

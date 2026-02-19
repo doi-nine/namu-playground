@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isGuest, setIsGuest] = useState(() => sessionStorage.getItem('guestMode') === 'true')
 
   useEffect(() => {
     // 초기 사용자 정보 가져오기
@@ -26,6 +27,9 @@ export function AuthProvider({ children }) {
         if (session?.user) {
           setLoading(true)
           fetchProfile(session.user.id)
+          // 실제 로그인 시 게스트 모드 자동 해제
+          sessionStorage.removeItem('guestMode')
+          setIsGuest(false)
         } else {
           setProfile(null)
           setLoading(false)
@@ -85,6 +89,16 @@ export function AuthProvider({ children }) {
 
   const signOut = () => supabase.auth.signOut()
 
+  const enterGuestMode = () => {
+    sessionStorage.setItem('guestMode', 'true')
+    setIsGuest(true)
+  }
+
+  const exitGuestMode = () => {
+    sessionStorage.removeItem('guestMode')
+    setIsGuest(false)
+  }
+
   // ✅ 프로필 새로고침 함수 추가
   const refreshProfile = async () => {
     if (!user) return;
@@ -111,7 +125,10 @@ export function AuthProvider({ children }) {
       signIn,
       signUp,
       signInWithGoogle,
-      signOut
+      signOut,
+      isGuest,
+      enterGuestMode,
+      exitGuestMode
     }}>
       {children}
     </AuthContext.Provider>

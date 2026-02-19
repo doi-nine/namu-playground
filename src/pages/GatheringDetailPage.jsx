@@ -10,9 +10,10 @@ import { Star } from 'lucide-react';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useToast } from '../components/Toast';
 import ReviewModal from '../components/ReviewModal';
+import { maskNickname } from '../utils/maskNickname';
 
 export default function GatheringDetailPage() {
-  const { user: authUser, profile } = useAuth();
+  const { user: authUser, profile, isGuest } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -754,7 +755,7 @@ export default function GatheringDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', marginBottom: '12px' }}>
           {/* 즐겨찾기 별 버튼 */}
           <button
-            onClick={() => toggleBookmark(id, gathering.title)}
+            onClick={() => isGuest ? navigate('/login') : toggleBookmark(id, gathering.title)}
             style={{
               background: 'none',
               border: 'none',
@@ -947,7 +948,7 @@ export default function GatheringDetailPage() {
                 {/* 모임장 */}
                 {creator && (
                   <div
-                    onClick={() => navigate(`/users/${gathering.creator_id}`)}
+                    onClick={() => !isGuest && navigate(`/users/${gathering.creator_id}`)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -956,10 +957,10 @@ export default function GatheringDetailPage() {
                       backgroundColor: 'rgba(107, 144, 128, 0.12)',
                       borderRadius: '10px',
                       transition: 'background-color 0.2s',
-                      cursor: 'pointer',
+                      cursor: isGuest ? 'default' : 'pointer',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107, 144, 128, 0.2)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(107, 144, 128, 0.12)'}
+                    onMouseEnter={(e) => !isGuest && (e.currentTarget.style.backgroundColor = 'rgba(107, 144, 128, 0.2)')}
+                    onMouseLeave={(e) => !isGuest && (e.currentTarget.style.backgroundColor = 'rgba(107, 144, 128, 0.12)')}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{
@@ -972,8 +973,8 @@ export default function GatheringDetailPage() {
                       }}>
                         모임장
                       </span>
-                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{creator.nickname}</span>
-                      {creator.custom_badge && (
+                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{isGuest ? maskNickname(creator.nickname) : creator.nickname}</span>
+                      {!isGuest && creator.custom_badge && (
                         <span style={{
                           padding: '1px 6px',
                           borderRadius: '4px',
@@ -1000,11 +1001,11 @@ export default function GatheringDetailPage() {
                 )}
 
                 {/* 일반 참가자 (모임장 제외) */}
-                {isApprovedMember ? (
+                {(isApprovedMember || isGuest) ? (
                   members.filter(m => m.user_id !== gathering.creator_id).map((member) => (
                     <div
                       key={member.id}
-                      onClick={() => navigate(`/users/${member.user_id}`)}
+                      onClick={() => !isGuest && navigate(`/users/${member.user_id}`)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1013,14 +1014,14 @@ export default function GatheringDetailPage() {
                         backgroundColor: 'rgba(0,0,0,0.03)',
                         borderRadius: '10px',
                         transition: 'background-color 0.2s',
-                        cursor: 'pointer',
+                        cursor: isGuest ? 'default' : 'pointer',
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)'}
+                      onMouseEnter={(e) => !isGuest && (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
+                      onMouseLeave={(e) => !isGuest && (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)')}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{member.profiles?.nickname || '익명'}</span>
-                        {member.profiles?.custom_badge && (
+                        <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{isGuest ? maskNickname(member.profiles?.nickname) : (member.profiles?.nickname || '익명')}</span>
+                        {!isGuest && member.profiles?.custom_badge && (
                           <span style={{
                             padding: '1px 6px',
                             borderRadius: '4px',
@@ -1138,7 +1139,37 @@ export default function GatheringDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            {!isCreator && (
+            {isGuest ? (
+              <div style={{
+                marginTop: '16px',
+                padding: '20px',
+                backgroundColor: 'rgba(107, 144, 128, 0.08)',
+                borderRadius: '14px',
+                textAlign: 'center',
+              }}>
+                <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                  로그인 후 참가할 수 있습니다
+                </p>
+                <button
+                  onClick={() => navigate('/login')}
+                  style={{
+                    padding: '12px 32px',
+                    backgroundColor: 'var(--button-primary)',
+                    color: '#FFFFFF',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
+                >
+                  로그인하기
+                </button>
+              </div>
+            ) : !isCreator && (
               <div style={{ marginTop: '16px' }}>
                 {!myMembership && !gathering.approval_required && (
                   <button
@@ -1724,7 +1755,7 @@ export default function GatheringDetailPage() {
         )}
 
         {activeTab === 'board' && (
-          !isApprovedMember ? (
+          (!isApprovedMember && !isGuest) ? (
             <div style={{ textAlign: 'center', padding: '48px 24px' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
               <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
@@ -1736,6 +1767,7 @@ export default function GatheringDetailPage() {
               memberStatus={memberStatus}
               isCreator={gathering?.creator_id === currentUser?.id}
               reviewKey={reviewSavedCount}
+              isGuest={isGuest}
             />
           )
         )}

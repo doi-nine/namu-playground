@@ -55,6 +55,7 @@ export default function PremiumPage() {
         { icon: '🎨', title: '프로필 꾸미기', desc: '테마, 배지로 나만의 프로필을 꾸며보세요' },
         { icon: '📌', title: '모임 글 상단 노출', desc: '모임 리스트에서 내 모임이 먼저 보여요' },
         { icon: '👥', title: '일정 모집인원 확대', desc: '일정당 최대 100명까지 모집할 수 있어요' },
+        { icon: '🧪', title: '베타 기능 체험', desc: '출시 전 새 기능을 먼저 경험해보세요' },
     ];
 
     return (

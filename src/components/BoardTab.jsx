@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { maskNickname } from '../utils/maskNickname';
 
 const SUB_TABS = [
   { key: 'free', label: '자유' },
   { key: 'review', label: '후기' },
 ];
 
-export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewKey }) {
+export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewKey, isGuest }) {
   const { user: authUser } = useAuth();
   const isMobile = useIsMobile();
   const [activeSubTab, setActiveSubTab] = useState('free');
@@ -275,7 +276,7 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
     return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   };
 
-  if (!canWrite) {
+  if (!canWrite && !isGuest) {
     return (
       <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
@@ -387,8 +388,8 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
                     alignItems: 'center',
                     gap: '4px',
                   }}>
-                    {review.profiles?.nickname || '알 수 없음'}
-                    {review.profiles?.custom_badge && (
+                    {isGuest ? maskNickname(review.profiles?.nickname) : (review.profiles?.nickname || '알 수 없음')}
+                    {!isGuest && review.profiles?.custom_badge && (
                       <span style={{
                         padding: '1px 6px',
                         borderRadius: '4px',
@@ -430,8 +431,8 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
         </div>
       ) : (
         <>
-      {/* 작성 폼 */}
-      <div className="glass-strong" style={{ padding: isMobile ? '14px' : '20px', borderRadius: '14px' }}>
+      {/* 작성 폼 (게스트 숨김) */}
+      {!isGuest && <div className="glass-strong" style={{ padding: isMobile ? '14px' : '20px', borderRadius: '14px' }}>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -675,7 +676,7 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
             {submitting ? '게시 중...' : '게시'}
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* 게시글 목록 */}
       {posts.length === 0 ? (
@@ -708,8 +709,8 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
                     alignItems: 'center',
                     gap: '4px',
                   }}>
-                    {post.profiles?.nickname || '알 수 없음'}
-                    {post.profiles?.custom_badge && (
+                    {isGuest ? maskNickname(post.profiles?.nickname) : (post.profiles?.nickname || '알 수 없음')}
+                    {!isGuest && post.profiles?.custom_badge && (
                       <span style={{
                         padding: '1px 6px',
                         borderRadius: '4px',
