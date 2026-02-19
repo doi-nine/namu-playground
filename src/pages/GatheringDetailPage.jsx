@@ -1754,7 +1754,7 @@ export default function GatheringDetailPage() {
             <textarea
               value={noticeAIPrompt}
               onChange={(e) => setNoticeAIPrompt(e.target.value)}
-              placeholder="예: 이번 주 토요일 모임 장소가 홍대 보드게임카페로 변경됩니다"
+              placeholder="예) 이번 주 토요일 보드게임 취소, 다음주로 연기"
               rows={3}
               disabled={noticeAIGenerating}
               style={{
