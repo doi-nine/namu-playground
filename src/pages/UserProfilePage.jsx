@@ -116,7 +116,7 @@ export default function UserProfilePage() {
   };
 
   return (
-    <div style={{ position: 'relative', paddingTop: '300px' }}>
+    <div style={{ position: 'relative', paddingTop: '276px' }}>
       {/* 배너 영역 */}
       <div style={{
         position: 'absolute',
@@ -128,117 +128,38 @@ export default function UserProfilePage() {
         borderRadius: '16px 16px 0 0',
       }} />
 
-      {/* 닉네임 + 매너도 */}
-      <div style={{
-        position: 'absolute',
-        top: '250px',
-        left: '32px',
-        right: '8px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        zIndex: 2,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-          <h1 style={{
-            fontSize: '26px',
-            fontWeight: '700',
-            color: 'var(--text-primary)',
-            margin: 0,
-          }}>
-            {profile?.nickname}
-          </h1>
-          {profile?.custom_badge && (
-            <span style={{
-              padding: '1px 6px',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: '500',
-              backgroundColor: 'rgba(107, 144, 128, 0.15)',
-              color: 'var(--button-primary)',
-              marginBottom: '7px',
-            }}>
-              {profile.custom_badge}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          {profile?.is_premium && (
-            <span style={{ fontSize: '20px' }}>👑</span>
-          )}
-          {myProfile?.is_premium && (
-            <div
-              onClick={() => navigate(`/popularity/${userId}`)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                border: '1.6px solid #6B9080',
-                borderRadius: '10px',
-                background: '#FFFFFF',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
-            >
-              <Heart size={18} color="#F43F5E" fill="#F43F5E" />
-              <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                {popularityScore}
-              </span>
-            </div>
-          )}
-          <button
-            onClick={() => navigate(`/users/${userId}/history`)}
-            style={{
-              padding: '8px 16px',
-              border: '1.6px solid #6B9080',
-              borderRadius: '10px',
-              background: '#FFFFFF',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: 'var(--text-primary)',
-              transition: 'all 0.2s',
-              fontFamily: 'inherit',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
-          >
-            이력
-          </button>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              padding: '8px 16px',
-              border: '1.6px solid #6B9080',
-              borderRadius: '10px',
-              background: '#FFFFFF',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: 'var(--text-primary)',
-              transition: 'all 0.2s',
-              fontFamily: 'inherit',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
-          >
-            뒤로
-          </button>
-        </div>
-      </div>
-
       {/* 메인 콘텐츠 - 2열 그리드 */}
       <div style={{
-        padding: '0 8px 8px',
+        padding: '24px 8px 8px',
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: '24px',
+        alignItems: 'start',
       }}>
         {/* 왼쪽 열 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* 닉네임 + 배지 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+              {profile?.nickname}
+            </h1>
+            {profile?.custom_badge && (
+              <span style={{
+                padding: '1px 6px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: '500',
+                backgroundColor: 'rgba(107, 144, 128, 0.15)',
+                color: 'var(--button-primary)',
+              }}>
+                {profile.custom_badge}
+              </span>
+            )}
+            {profile?.is_premium && (
+              <span style={{ fontSize: '20px' }}>👑</span>
+            )}
+          </div>
+
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
             <h3 style={cardTitleStyle}>취미</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
@@ -269,13 +190,77 @@ export default function UserProfilePage() {
         </div>
 
         {/* 오른쪽 열 */}
-        <div style={{ display: 'flex', flexDirection: 'column', height: '424px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* 버튼 영역 */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'flex-end' }}>
+            {myProfile?.is_premium && (
+              <div
+                onClick={() => navigate(`/popularity/${userId}`)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  border: '1.6px solid #6B9080',
+                  borderRadius: '10px',
+                  background: '#FFFFFF',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+              >
+                <Heart size={18} color="#F43F5E" fill="#F43F5E" />
+                <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                  {popularityScore}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={() => navigate(`/users/${userId}/history`)}
+              style={{
+                padding: '8px 16px',
+                border: '1.6px solid #6B9080',
+                borderRadius: '10px',
+                background: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                transition: 'all 0.2s',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+            >
+              이력
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                padding: '8px 16px',
+                border: '1.6px solid #6B9080',
+                borderRadius: '10px',
+                background: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                transition: 'all 0.2s',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+            >
+              뒤로
+            </button>
+          </div>
+
+          {/* 자기소개 */}
           <div style={{
             ...innerCardStyle,
-            flexGrow: 1,
             display: 'flex',
             flexDirection: 'column',
-            marginBottom: '24px',
             overflow: 'hidden',
           }}>
             <h3 style={cardTitleStyle}>자기소개</h3>
