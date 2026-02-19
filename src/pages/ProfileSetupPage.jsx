@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 
 export default function ProfileSetupPage() {
@@ -9,6 +10,7 @@ export default function ProfileSetupPage() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
+  const isMobile = useIsMobile();
 
   const [nickname, setNickname] = useState("");
   const [nicknameError, setNicknameError] = useState("");
@@ -219,16 +221,16 @@ export default function ProfileSetupPage() {
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255,255,255,0.5)',
     borderRadius: '24px',
-    padding: '40px 40px 16px 40px',
+    padding: isMobile ? '24px 16px 16px 16px' : '40px 40px 16px 40px',
     boxShadow: '0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
   };
 
   // 모드 선택 화면
   if (!mode) {
     return (
-      <div style={{ minHeight: '100vh', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', padding: isMobile ? '12px' : '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={glassContainer}>
-          <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px 0' : '32px 24px' }}>
             <h1 style={{
               fontSize: '24px',
               fontWeight: '700',
@@ -293,9 +295,9 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', padding: isMobile ? '12px' : '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
       <div style={glassContainer}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: isMobile ? '4px 0' : '32px 24px' }}>
       <h1 style={{
         fontSize: '24px',
         fontWeight: '700',
