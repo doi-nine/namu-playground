@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,26 @@ export default function CreateSchedulePage() {
   const [aiResult, setAiResult] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
+
+  // AI 사용 횟수 (무료 유저 월 3회 제한)
+  const AI_MONTHLY_LIMIT = 3;
+  const getAIUsageKey = () => {
+    const now = new Date();
+    return `ai_schedule_uses_${user?.id}_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+  const [aiUsedCount, setAiUsedCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.id) {
+      const count = parseInt(localStorage.getItem(getAIUsageKey()) || '0', 10);
+      setAiUsedCount(count);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const isPremium = !!profile?.is_premium;
+  const aiRemaining = isPremium ? null : Math.max(0, AI_MONTHLY_LIMIT - aiUsedCount);
+  const isAILimitReached = !isPremium && aiUsedCount >= AI_MONTHLY_LIMIT;
 
   const inputStyle = (name) => ({
     width: '100%',
@@ -76,6 +96,10 @@ export default function CreateSchedulePage() {
       setAiError('어떤 일정인지 입력해주세요.');
       return;
     }
+    if (isAILimitReached) {
+      setAiError('이번 달 무료 AI 생성 횟수(3회)를 모두 사용했습니다.');
+      return;
+    }
     setIsGenerating(true);
     setAiError('');
     try {
@@ -87,6 +111,13 @@ export default function CreateSchedulePage() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       if (!data?.title || !data?.description) throw new Error('AI가 일정 정보를 생성하지 못했습니다.');
+
+      // 사용 횟수 증가
+      if (!isPremium) {
+        const newCount = aiUsedCount + 1;
+        localStorage.setItem(getAIUsageKey(), String(newCount));
+        setAiUsedCount(newCount);
+      }
 
       setAiResult(data);
       setForm(prev => ({
@@ -331,41 +362,60 @@ export default function CreateSchedulePage() {
               {aiError && (
                 <p style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '8px' }}>{aiError}</p>
               )}
-              <button
-                type="button"
-                onClick={handleAIGenerate}
-                disabled={isGenerating}
-                style={{
-                  marginTop: '14px',
-                  width: '100%',
-                  backgroundColor: isGenerating ? 'rgba(0,0,0,0.04)' : '#FFFFFF',
-                  color: isGenerating ? 'var(--text-muted)' : 'var(--button-primary)',
-                  padding: '14px 0',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  border: isGenerating ? '1.5px solid rgba(0,0,0,0.1)' : '1.5px solid var(--button-primary)',
-                  cursor: isGenerating ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                  fontSize: '15px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-                onMouseEnter={(e) => { if (!isGenerating) e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.06)'; }}
-                onMouseLeave={(e) => { if (!isGenerating) e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
-              >
-                {isGenerating ? (
-                  <>
-                    <div style={{
-                      width: '16px', height: '16px',
-                      border: '2px solid rgba(0,0,0,0.1)', borderTop: '2px solid var(--button-primary)',
-                      borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                    }} />
-                    생성 중...
-                  </>
-                ) : 'AI로 만들기'}
-              </button>
+              <div style={{ position: 'relative', marginTop: '14px' }}>
+                {/* 남은 횟수 뱃지 (무료 유저만) */}
+                {!isPremium && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    right: '0',
+                    backgroundColor: aiRemaining === 0 ? 'var(--danger, #e53e3e)' : 'var(--button-primary)',
+                    color: '#FFFFFF',
+                    borderRadius: '20px',
+                    padding: '2px 9px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  }}>
+                    이번 달 {aiRemaining}회 남음
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleAIGenerate}
+                  disabled={isGenerating || isAILimitReached}
+                  style={{
+                    width: '100%',
+                    backgroundColor: (isGenerating || isAILimitReached) ? 'rgba(0,0,0,0.04)' : '#FFFFFF',
+                    color: (isGenerating || isAILimitReached) ? 'var(--text-muted)' : 'var(--button-primary)',
+                    padding: '14px 0',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    border: (isGenerating || isAILimitReached) ? '1.5px solid rgba(0,0,0,0.1)' : '1.5px solid var(--button-primary)',
+                    cursor: (isGenerating || isAILimitReached) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    fontSize: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => { if (!isGenerating && !isAILimitReached) e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.06)'; }}
+                  onMouseLeave={(e) => { if (!isGenerating && !isAILimitReached) e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                >
+                  {isGenerating ? (
+                    <>
+                      <div style={{
+                        width: '16px', height: '16px',
+                        border: '2px solid rgba(0,0,0,0.1)', borderTop: '2px solid var(--button-primary)',
+                        borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                      }} />
+                      생성 중...
+                    </>
+                  ) : isAILimitReached ? '이번 달 사용 횟수 소진' : 'AI로 만들기'}
+                </button>
+              </div>
             </div>
 
             {/* AI 결과 - 수정 가능 */}
