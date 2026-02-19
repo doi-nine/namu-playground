@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS schedule_reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   gathering_id uuid NOT NULL REFERENCES gatherings(id) ON DELETE CASCADE,
-  schedule_id uuid NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+  schedule_id bigint NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   q1_mood text NOT NULL,
   q2_again text NOT NULL,
