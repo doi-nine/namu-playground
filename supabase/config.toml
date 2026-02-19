@@ -388,11 +388,6 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/ai-chat-summary/index.ts"
 
-[functions.ai-generate-gathering]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/ai-generate-gathering/index.ts"
-
 [functions.ai-generate-description]
 enabled = true
 verify_jwt = false
