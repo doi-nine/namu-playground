@@ -91,6 +91,9 @@ export default function NotificationsPage() {
     } else if (notification.type === 'schedule_created' && notification.gathering_id) {
       targetPath = `/gatherings/${notification.gathering_id}`;
       targetState = { tab: 'schedules' };
+    } else if (notification.type === 'schedule_completed' && notification.gathering_id) {
+      targetPath = `/gatherings/${notification.gathering_id}`;
+      targetState = { tab: 'board' };
     } else if (notification.gathering_id) {
       targetPath = `/gatherings/${notification.gathering_id}`;
     }
@@ -155,6 +158,12 @@ export default function NotificationsPage() {
           icon: '🗓️',
           message: `"${gatheringTitle}" 모임의 일정이 취소되었습니다.`,
           color: '#ef4444'
+        };
+      case 'schedule_completed':
+        return {
+          icon: '📝',
+          message: `"${gatheringTitle}" 모임의 일정이 완료되었습니다. 후기를 남겨주세요!`,
+          color: '#059669'
         };
       default:
         return {

@@ -226,6 +226,19 @@ export default function ScheduleDetailPage() {
     try {
       await supabase.from('schedules').update({ is_completed: true }).eq('id', scheduleId);
       setSchedule(prev => ({ ...prev, is_completed: true }));
+
+      // 참여자들에게 후기 작성 알림 전송 (완료 처리한 본인 제외)
+      const participantsToNotify = members.filter(m => m.user_id !== currentUser.id);
+      if (participantsToNotify.length > 0) {
+        await supabase.from('notifications').insert(
+          participantsToNotify.map(m => ({
+            user_id: m.user_id,
+            type: 'schedule_completed',
+            gathering_id: schedule.gathering_id,
+            related_user_id: currentUser.id,
+          }))
+        );
+      }
     } catch (err) {
       alert('일정 종료 중 오류가 발생했습니다: ' + err.message);
     }

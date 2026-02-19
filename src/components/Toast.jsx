@@ -5,25 +5,39 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
   const [toast, setToast] = useState(null);
 
-  const showToast = useCallback(({ message, type = 'info', duration = 6000, onDismiss }) => {
-    setToast({ message, type, onDismiss });
-
-    const timer = setTimeout(() => {
-      setToast(null);
-      onDismiss?.();
-    }, duration);
-
-    // 이전 타이머 정리를 위해 ref 대신 클로저로 처리
+  const showToast = useCallback(({ message, type = 'info', duration = 6000, onDismiss, onClose }) => {
     setToast(prev => {
       if (prev?._timer) clearTimeout(prev._timer);
-      return { message, type, onDismiss, _timer: timer };
+      return null;
     });
+
+    const timer = setTimeout(() => {
+      setToast(prev => {
+        if (prev?._timer) clearTimeout(prev._timer);
+        return null;
+      });
+      // 타이머 만료는 onClose(거절)와 동일 처리
+      onClose?.();
+    }, duration);
+
+    setToast({ message, type, onDismiss, onClose, _timer: timer });
   }, []);
 
-  const dismissToast = useCallback(() => {
+  // 토스트 본문 클릭 → 액션 (후기 작성 등)
+  const handleAction = useCallback(() => {
     setToast(prev => {
       if (prev?._timer) clearTimeout(prev._timer);
       prev?.onDismiss?.();
+      return null;
+    });
+  }, []);
+
+  // X 버튼 클릭 → 거절 (onClose, 모달 안 열림)
+  const handleClose = useCallback((e) => {
+    e.stopPropagation();
+    setToast(prev => {
+      if (prev?._timer) clearTimeout(prev._timer);
+      prev?.onClose?.();
       return null;
     });
   }, []);
@@ -33,7 +47,7 @@ export function ToastProvider({ children }) {
       {children}
       {toast && (
         <div
-          onClick={dismissToast}
+          onClick={handleAction}
           style={{
             position: 'fixed',
             bottom: '90px',
@@ -61,7 +75,26 @@ export function ToastProvider({ children }) {
             <span style={{ fontSize: '18px', flexShrink: 0 }}>
               {toast.type === 'warning' ? '⚠️' : 'ℹ️'}
             </span>
-            <span>{toast.message}</span>
+            <span style={{ flex: 1 }}>{toast.message}</span>
+            {/* X 버튼: 거절, 모달 열지 않음 */}
+            <button
+              onClick={handleClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0 0 0 4px',
+                fontSize: '16px',
+                color: 'var(--text-muted)',
+                lineHeight: 1,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              aria-label="닫기"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

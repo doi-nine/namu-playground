@@ -309,16 +309,28 @@ export default function GatheringDetailPage() {
             (reviewData || []).forEach(r => { reviewedMap[r.schedule_id] = true; });
             setMyReviewedScheduleIds(reviewedMap);
 
-            // 미리뷰 일정이 있으면 토스트 표시
+            // 미리뷰 일정이 있으면 토스트 표시 (거절한 일정 제외)
+            const dismissedKey = `dismissed_review_schedules_${currentUser.id}`;
+            let dismissedIds = [];
+            try { dismissedIds = JSON.parse(localStorage.getItem(dismissedKey) || '[]'); } catch { dismissedIds = []; }
+
             const unreviewedSchedules = (schedulesData || []).filter(
-              s => s.is_completed && membershipMap[s.id] && !reviewedMap[s.id]
+              s => s.is_completed && membershipMap[s.id] && !reviewedMap[s.id] && !dismissedIds.includes(s.id)
             );
             if (unreviewedSchedules.length > 0) {
               showToast({
-                message: '완료된 일정의 후기를 작성해주세요!',
+                message: '완료된 일정의 후기를 작성해주세요! (탭하면 작성)',
                 type: 'info',
                 duration: 8000,
                 onDismiss: () => setReviewModalSchedule(unreviewedSchedules[0]),
+                onClose: () => {
+                  // X 버튼 또는 타이머 만료 → 해당 일정들을 거절 목록에 저장
+                  try {
+                    const existing = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+                    const merged = [...new Set([...existing, ...unreviewedSchedules.map(s => s.id)])];
+                    localStorage.setItem(dismissedKey, JSON.stringify(merged));
+                  } catch { /* ignore */ }
+                },
               });
             }
           }
