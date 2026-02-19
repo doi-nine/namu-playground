@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -24,7 +24,11 @@ export default function ProfileEditPage() {
   const [customBadge, setCustomBadge] = useState("");
   const [nicknameError, setNicknameError] = useState("");
 
+  const [categoriesError, setCategoriesError] = useState("");
   const [customTagInput, setCustomTagInput] = useState("");
+
+  const nicknameRef = useRef(null);
+  const categoriesRef = useRef(null);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -67,6 +71,7 @@ export default function ProfileEditPage() {
     const newTags = input.split(',').map(t => t.trim()).filter(t => t);
     setFavoriteGameCategories(prev => [...new Set([...prev, ...newTags])]);
     setCustomTagInput("");
+    setCategoriesError("");
   };
 
   const removeTag = (tag) => {
@@ -118,10 +123,20 @@ export default function ProfileEditPage() {
   }
 
   async function handleSubmit() {
-    if (!nickname || favoriteGameCategories.length === 0) {
-      alert("닉네임과 선호 게임은 필수입니다!");
+    // 닉네임 검증
+    if (!nickname.trim()) {
+      setNicknameError('닉네임을 입력해주세요.');
+      nicknameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nicknameRef.current?.focus();
       return;
     }
+    // 하고 싶은 것 검증
+    if (favoriteGameCategories.length === 0) {
+      setCategoriesError('하고 싶은 것을 최소 1개 이상 추가해주세요.');
+      categoriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setCategoriesError('');
 
     // 닉네임 중복 체크 (본인 제외)
     const { data: existing } = await supabase
@@ -324,6 +339,7 @@ export default function ProfileEditPage() {
             닉네임 *
           </label>
           <input
+            ref={nicknameRef}
             type="text"
             value={nickname}
             onChange={(e) => { if (e.target.value.length <= 10) { setNickname(e.target.value); setNicknameError(''); } }}
@@ -401,11 +417,14 @@ export default function ProfileEditPage() {
           )}
         </div>
 
-        {/* 선호 게임 태그 */}
-        <div>
+        {/* 하고 싶은 것 태그 */}
+        <div ref={categoriesRef}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-            하고 싶은 것
+            하고 싶은 것<span style={{ color: '#DC2626', marginLeft: '2px' }}>*</span>
           </label>
+          {categoriesError && (
+            <p style={{ fontSize: '12px', color: '#DC2626', marginBottom: '6px' }}>{categoriesError}</p>
+          )}
           <div>
             <label style={{ display: 'block', fontSize: '12px', marginBottom: '6px', color: 'var(--text-muted)' }}>
               직접 태그 입력 (쉼표로 구분, Enter로 추가)
@@ -606,7 +625,6 @@ export default function ProfileEditPage() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={handleSubmit}
-            disabled={!nickname || favoriteGameCategories.length === 0}
             style={{
               flex: 1,
               padding: '14px',
@@ -616,11 +634,10 @@ export default function ProfileEditPage() {
               borderRadius: '12px',
               fontSize: '15px',
               fontWeight: '600',
-              cursor: (!nickname || favoriteGameCategories.length === 0) ? 'not-allowed' : 'pointer',
-              opacity: (!nickname || favoriteGameCategories.length === 0) ? 0.5 : 1,
+              cursor: 'pointer',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'; }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
           >
             저장하기
