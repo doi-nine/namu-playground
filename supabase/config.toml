@@ -398,6 +398,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/ai-generate-notice/index.ts"
 
+[functions.ai-generate-schedule]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-generate-schedule/index.ts"
+
 [functions.ai-generate-post]
 enabled = true
 verify_jwt = false
