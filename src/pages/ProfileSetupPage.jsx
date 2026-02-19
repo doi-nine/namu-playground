@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -11,6 +11,22 @@ export default function ProfileSetupPage() {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
   const isMobile = useIsMobile();
+
+  // 모바일 전역 CSS(html,body overflow:hidden)를 이 페이지에서만 해제
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.overflow = 'auto';
+    html.style.height = 'auto';
+    body.style.overflow = 'auto';
+    body.style.height = 'auto';
+    return () => {
+      html.style.overflow = '';
+      html.style.height = '';
+      body.style.overflow = '';
+      body.style.height = '';
+    };
+  }, []);
 
   const [nickname, setNickname] = useState("");
   const [nicknameError, setNicknameError] = useState("");
