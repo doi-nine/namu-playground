@@ -65,14 +65,10 @@ export default function ScheduleDetailPage() {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      await fetchAll(user);
     };
     init();
-  }, []);
-
-  useEffect(() => {
-    if (!currentUser) return;
-    fetchAll();
-  }, [currentUser, scheduleId]);
+  }, [scheduleId]);
 
   useEffect(() => {
     if (activeTab === 'chat' && currentUser) {
@@ -100,7 +96,8 @@ export default function ScheduleDetailPage() {
     });
   }, [messages]);
 
-  const fetchAll = async () => {
+  const fetchAll = async (userOverride) => {
+    const user = userOverride !== undefined ? userOverride : currentUser;
     try {
       setLoading(true);
 
@@ -112,32 +109,34 @@ export default function ScheduleDetailPage() {
       if (scheduleError) throw scheduleError;
       setSchedule(scheduleData);
 
-      const { data: membersData } = await supabase
-        .from('schedule_members')
-        .select('user_id, status, attendance_status, profiles(nickname, custom_badge, is_premium)')
-        .eq('schedule_id', scheduleId);
-      setMembers(membersData || []);
+      if (user) {
+        const { data: membersData } = await supabase
+          .from('schedule_members')
+          .select('user_id, status, attendance_status, profiles(nickname, custom_badge, is_premium)')
+          .eq('schedule_id', scheduleId);
+        setMembers(membersData || []);
 
-      const isMember = (membersData || []).some(m => m.user_id === currentUser.id);
-      setMyMembership(isMember);
+        const isMember = (membersData || []).some(m => m.user_id === user.id);
+        setMyMembership(isMember);
 
-      const { data: gm } = await supabase
-        .from('gathering_members')
-        .select('status')
-        .eq('gathering_id', id)
-        .eq('user_id', currentUser.id)
-        .maybeSingle();
-      setGatheringMembership(gm);
+        const { data: gm } = await supabase
+          .from('gathering_members')
+          .select('status')
+          .eq('gathering_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setGatheringMembership(gm);
 
-      if (scheduleData.is_completed && isMember) {
-        const { data: evalData } = await supabase
-          .from('popularity_votes')
-          .select('id')
-          .eq('from_user_id', currentUser.id)
-          .eq('schedule_id', parseInt(scheduleId))
-          .eq('is_active', true)
-          .limit(1);
-        setEvalDone((evalData || []).length > 0);
+        if (scheduleData.is_completed && isMember) {
+          const { data: evalData } = await supabase
+            .from('popularity_votes')
+            .select('id')
+            .eq('from_user_id', user.id)
+            .eq('schedule_id', parseInt(scheduleId))
+            .eq('is_active', true)
+            .limit(1);
+          setEvalDone((evalData || []).length > 0);
+        }
       }
     } catch (err) {
       console.error('일정 상세 조회 오류:', err);
@@ -390,37 +389,9 @@ export default function ScheduleDetailPage() {
     );
   }
 
-  if (!gatheringMembership || gatheringMembership.status === 'kicked') {
-    return (
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-        <p style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '16px', marginBottom: '8px' }}>
-          접근할 수 없는 일정입니다
-        </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
-          모임 멤버만 일정에 접근할 수 있습니다.
-        </p>
-        <button
-          onClick={() => navigate(`/gatherings/${id}`)}
-          style={{
-            padding: '10px 24px',
-            backgroundColor: 'var(--button-primary)',
-            color: '#FFFFFF',
-            borderRadius: '12px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-          }}
-        >
-          모임으로 돌아가기
-        </button>
-      </div>
-    );
-  }
+  const isApprovedGatheringMember = gatheringMembership?.status === 'approved';
 
   const isScheduleCreator = currentUser && schedule.created_by === currentUser.id;
-  const isApprovedGatheringMember = gatheringMembership?.status === 'approved' || isScheduleCreator;
   const isFull = schedule.current_members >= schedule.max_members;
   const canEval = schedule.is_completed && myMembership && !evalDone;
 
@@ -516,96 +487,105 @@ export default function ScheduleDetailPage() {
             </div>
           </div>
 
-          {/* 참여 멤버 */}
-          <div style={{ backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>
-                참여 멤버 ({members.length}명)
-              </h2>
-              {members.length > 0 && (
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  보류: <strong style={{ color: 'var(--text-muted)' }}>{members.filter(m => m.attendance_status !== 'confirmed').length}</strong>
-                  {' '}|{' '}
-                  <span style={{ color: 'var(--text-primary)' }}>확정: </span><strong style={{ color: 'var(--text-primary)' }}>{members.filter(m => m.attendance_status === 'confirmed').length}</strong>
-                </span>
-              )}
-            </div>
-            {members.length === 0 ? (
-              <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>아직 참여한 멤버가 없습니다.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {members.map(member => (
-                  <div
-                    key={member.user_id}
-                    onClick={() => navigate(`/users/${member.user_id}`)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '12px 16px', borderRadius: '10px',
-                      backgroundColor: member.user_id === schedule.created_by ? 'rgba(107,144,128,0.1)' : 'rgba(0,0,0,0.03)',
-                      cursor: 'pointer', transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.15)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = member.user_id === schedule.created_by ? 'rgba(107,144,128,0.1)' : 'rgba(0,0,0,0.03)'}
-                  >
-                    {member.user_id === schedule.created_by && (
-                      <span style={{
-                        fontSize: '11px', padding: '1px 8px', borderRadius: '6px',
-                        backgroundColor: 'rgba(107,144,128,0.2)', color: 'var(--button-primary)', fontWeight: '500',
-                      }}>주최</span>
-                    )}
-                    <span style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '14px' }}>
-                      {member.profiles?.nickname || '익명'}
-                    </span>
-                    {member.profiles?.custom_badge && (
-                      <span style={{
-                        padding: '1px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: '500',
-                        backgroundColor: 'rgba(107,144,128,0.15)', color: 'var(--button-primary)',
-                      }}>
-                        {member.profiles.custom_badge}
-                      </span>
-                    )}
-                    {/* 참석 상태 버튼 (본인만 조작 가능) */}
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                      {member.user_id === currentUser?.id ? (
-                        <>
-                          <button
-                            onClick={(e) => handleAttendanceStatus(e, 'pending')}
-                            style={{
-                              padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
-                              border: '1.5px solid',
-                              borderColor: member.attendance_status === 'pending' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.12)',
-                              backgroundColor: member.attendance_status === 'pending' ? 'rgba(0,0,0,0.08)' : 'transparent',
-                              color: member.attendance_status === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)',
-                              cursor: 'pointer', transition: 'all 0.15s',
-                            }}
-                          >보류</button>
-                          <button
-                            onClick={(e) => handleAttendanceStatus(e, 'confirmed')}
-                            style={{
-                              padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
-                              border: '1.5px solid',
-                              borderColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'rgba(0,0,0,0.12)',
-                              backgroundColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'transparent',
-                              color: member.attendance_status === 'confirmed' ? '#fff' : 'var(--text-muted)',
-                              cursor: 'pointer', transition: 'all 0.15s',
-                            }}
-                          >확정</button>
-                        </>
-                      ) : (
+          {/* 참여 멤버 - 모임 가입자에게만 표시 */}
+          {isApprovedGatheringMember ? (
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: '14px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>
+                  참여 멤버 ({members.length}명)
+                </h2>
+                {members.length > 0 && (
+                  <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                    보류: <strong style={{ color: 'var(--text-muted)' }}>{members.filter(m => m.attendance_status !== 'confirmed').length}</strong>
+                    {' '}|{' '}
+                    <span style={{ color: 'var(--text-primary)' }}>확정: </span><strong style={{ color: 'var(--text-primary)' }}>{members.filter(m => m.attendance_status === 'confirmed').length}</strong>
+                  </span>
+                )}
+              </div>
+              {members.length === 0 ? (
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>아직 참여한 멤버가 없습니다.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {members.map(member => (
+                    <div
+                      key={member.user_id}
+                      onClick={() => navigate(`/users/${member.user_id}`)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '12px 16px', borderRadius: '10px',
+                        backgroundColor: member.user_id === schedule.created_by ? 'rgba(107,144,128,0.1)' : 'rgba(0,0,0,0.03)',
+                        cursor: 'pointer', transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.15)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = member.user_id === schedule.created_by ? 'rgba(107,144,128,0.1)' : 'rgba(0,0,0,0.03)'}
+                    >
+                      {member.user_id === schedule.created_by && (
                         <span style={{
-                          padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
-                          backgroundColor: member.attendance_status === 'confirmed' ? 'rgba(107,144,128,0.15)' : 'rgba(0,0,0,0.06)',
-                          color: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'var(--text-muted)',
+                          fontSize: '11px', padding: '1px 8px', borderRadius: '6px',
+                          backgroundColor: 'rgba(107,144,128,0.2)', color: 'var(--button-primary)', fontWeight: '500',
+                        }}>주최</span>
+                      )}
+                      <span style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '14px' }}>
+                        {member.profiles?.nickname || '익명'}
+                      </span>
+                      {member.profiles?.custom_badge && (
+                        <span style={{
+                          padding: '1px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: '500',
+                          backgroundColor: 'rgba(107,144,128,0.15)', color: 'var(--button-primary)',
                         }}>
-                          {member.attendance_status === 'confirmed' ? '확정' : '보류'}
+                          {member.profiles.custom_badge}
                         </span>
                       )}
+                      {/* 참석 상태 버튼 (본인만 조작 가능) */}
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                        {member.user_id === currentUser?.id ? (
+                          <>
+                            <button
+                              onClick={(e) => handleAttendanceStatus(e, 'pending')}
+                              style={{
+                                padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                                border: '1.5px solid',
+                                borderColor: member.attendance_status === 'pending' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.12)',
+                                backgroundColor: member.attendance_status === 'pending' ? 'rgba(0,0,0,0.08)' : 'transparent',
+                                color: member.attendance_status === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)',
+                                cursor: 'pointer', transition: 'all 0.15s',
+                              }}
+                            >보류</button>
+                            <button
+                              onClick={(e) => handleAttendanceStatus(e, 'confirmed')}
+                              style={{
+                                padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                                border: '1.5px solid',
+                                borderColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'rgba(0,0,0,0.12)',
+                                backgroundColor: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'transparent',
+                                color: member.attendance_status === 'confirmed' ? '#fff' : 'var(--text-muted)',
+                                cursor: 'pointer', transition: 'all 0.15s',
+                              }}
+                            >확정</button>
+                          </>
+                        ) : (
+                          <span style={{
+                            padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                            backgroundColor: member.attendance_status === 'confirmed' ? 'rgba(107,144,128,0.15)' : 'rgba(0,0,0,0.06)',
+                            color: member.attendance_status === 'confirmed' ? 'var(--button-primary)' : 'var(--text-muted)',
+                          }}>
+                            {member.attendance_status === 'confirmed' ? '확정' : '보류'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: '14px', padding: '24px', textAlign: 'center' }}>
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔒</div>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
+                멤버 목록은 모임 가입자만 볼 수 있습니다.
+              </p>
+            </div>
+          )}
 
           {/* 액션 버튼 */}
           {!schedule.is_completed && isApprovedGatheringMember && (
