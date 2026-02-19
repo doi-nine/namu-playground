@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -31,7 +31,28 @@ export default function ProfileSetupPage() {
   const [nickname, setNickname] = useState("");
   const [nicknameError, setNicknameError] = useState("");
   const [favoriteGameCategories, setFavoriteGameCategories] = useState([]);
+  const [categoriesError, setCategoriesError] = useState("");
   const [tagInput, setTagInput] = useState("");
+
+  // 스크롤 대상 ref
+  const nicknameRef = useRef(null);
+  const categoriesRef = useRef(null);
+
+  // step 변경 후 스크롤 처리
+  const [scrollTarget, setScrollTarget] = useState(null);
+  useEffect(() => {
+    if (!scrollTarget) return;
+    const timer = setTimeout(() => {
+      if (scrollTarget === 'nickname' && nicknameRef.current) {
+        nicknameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nicknameRef.current.focus();
+      } else if (scrollTarget === 'categories' && categoriesRef.current) {
+        categoriesRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setScrollTarget(null);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [scrollTarget, step]);
   const [birthYear, setBirthYear] = useState("");
   const [ageRange, setAgeRange] = useState("");
   const [location, setLocation] = useState("");
@@ -111,8 +132,16 @@ export default function ProfileSetupPage() {
   };
 
   const handleSubmit = async () => {
-    if (!nickname) {
-      alert("닉네임은 필수입니다!");
+    if (!nickname.trim()) {
+      setNicknameError('닉네임을 입력해주세요.');
+      setStep(mode === 'ai' ? 1 : 1);
+      setScrollTarget('nickname');
+      return;
+    }
+    if (favoriteGameCategories.length === 0) {
+      setCategoriesError('하고 싶은 것을 최소 1개 이상 추가해주세요.');
+      setStep(1);
+      setScrollTarget('categories');
       return;
     }
 
@@ -459,6 +488,7 @@ export default function ProfileSetupPage() {
           <div style={{ marginBottom: '20px' }}>
             <label style={labelStyle}>닉네임 *</label>
             <input
+              ref={nicknameRef}
               type="text"
               placeholder="닉네임"
               value={nickname}
@@ -475,9 +505,13 @@ export default function ProfileSetupPage() {
           </div>
 
           <div>
-            <label style={labelStyle}>하고 싶은 것 (Enter로 추가)</label>
-            <div style={{
+            <label style={labelStyle}>
+              하고 싶은 것<span style={{ color: '#DC2626', marginLeft: '2px' }}>*</span>
+              <span style={{ fontWeight: '400', color: 'var(--text-muted)', marginLeft: '6px' }}>(Enter로 추가)</span>
+            </label>
+            <div ref={categoriesRef} style={{
               ...inputStyle,
+              ...(categoriesError ? { borderColor: '#DC2626', boxShadow: '0 0 0 2px rgba(220,38,38,0.2)' } : {}),
               display: 'flex',
               flexWrap: 'wrap',
               gap: '6px',
@@ -528,10 +562,21 @@ export default function ProfileSetupPage() {
                 }}
               />
             </div>
+            {categoriesError && (
+              <p style={{ fontSize: '12px', color: '#DC2626', marginTop: '6px' }}>{categoriesError}</p>
+            )}
           </div>
 
           <button
-            onClick={() => setStep(2)}
+            onClick={() => {
+              if (favoriteGameCategories.length === 0) {
+                setCategoriesError('하고 싶은 것을 최소 1개 이상 추가해주세요.');
+                categoriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+              }
+              setCategoriesError('');
+              setStep(2);
+            }}
             disabled={!nickname}
             style={{
               width: '100%',
