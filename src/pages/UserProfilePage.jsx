@@ -240,7 +240,7 @@ export default function UserProfilePage() {
         {/* 왼쪽 열 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
-            <h3 style={cardTitleStyle}>최근 게임</h3>
+            <h3 style={cardTitleStyle}>취미</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
               {profile?.recent_games ? (
                 profile.recent_games.split(',').map((game, idx) => (
@@ -255,7 +255,7 @@ export default function UserProfilePage() {
           </div>
 
           <div style={{ ...innerCardStyle, minHeight: '200px' }}>
-            <h3 style={cardTitleStyle}>선호하는 게임</h3>
+            <h3 style={cardTitleStyle}>하고 싶은 것</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
               {profile?.favorite_game_categories?.length > 0 ? (
                 profile.favorite_game_categories.map((game, idx) => (
