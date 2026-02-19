@@ -34,6 +34,11 @@ export default function GatheringDetailPage() {
   const [noticeFocused, setNoticeFocused] = useState(null);
   const [editingNoticeId, setEditingNoticeId] = useState(null);
   const [editNoticeForm, setEditNoticeForm] = useState({ title: '', content: '' });
+  const [showNoticeAIModal, setShowNoticeAIModal] = useState(false);
+  const [noticeAIPrompt, setNoticeAIPrompt] = useState('');
+  const [noticeAITone, setNoticeAITone] = useState('중립적');
+  const [noticeAIGenerating, setNoticeAIGenerating] = useState(false);
+  const [noticeAIResult, setNoticeAIResult] = useState(null);
 
   // 일정 관련 state
   const [schedules, setSchedules] = useState([]);
@@ -164,6 +169,40 @@ export default function GatheringDetailPage() {
     } finally {
       setNoticeSubmitting(false);
     }
+  };
+
+  const handleGenerateNoticeAI = async () => {
+    if (!noticeAIPrompt.trim()) return;
+    setNoticeAIGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-generate-notice', {
+        body: { prompt: noticeAIPrompt, tone: noticeAITone }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setNoticeAIResult({ title: data.title || '', content: data.content || '' });
+    } catch (err) {
+      alert('AI 공지 생성 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setNoticeAIGenerating(false);
+    }
+  };
+
+  const handleApplyNoticeAI = () => {
+    if (!noticeAIResult) return;
+    setNoticeForm({ title: noticeAIResult.title, content: noticeAIResult.content });
+    setShowNoticeAIModal(false);
+    setNoticeAIPrompt('');
+    setNoticeAITone('중립적');
+    setNoticeAIResult(null);
+    setShowNoticeForm(true);
+  };
+
+  const handleCloseNoticeAIModal = () => {
+    setShowNoticeAIModal(false);
+    setNoticeAIPrompt('');
+    setNoticeAITone('중립적');
+    setNoticeAIResult(null);
   };
 
   const handleEditNoticeStart = (notice) => {
@@ -1170,27 +1209,70 @@ export default function GatheringDetailPage() {
             ) : (<>{isCreator && (
               <div style={{ marginBottom: '16px' }}>
                 {!showNoticeForm ? (
-                  <button
-                    onClick={() => setShowNoticeForm(true)}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: 'var(--button-primary)',
-                      color: 'white',
-                      borderRadius: '10px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
-                  >
-                    + 공지 작성
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => setShowNoticeForm(true)}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: 'var(--button-primary)',
+                        color: 'white',
+                        borderRadius: '10px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--button-primary)'}
+                    >
+                      + 공지 작성
+                    </button>
+                    <button
+                      onClick={() => setShowNoticeAIModal(true)}
+                      style={{
+                        padding: '10px 16px',
+                        backgroundColor: 'rgba(107,144,128,0.12)',
+                        color: 'var(--button-primary)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(107,144,128,0.3)',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.2)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(107,144,128,0.12)'}
+                    >
+                      ✨ AI로 작성
+                    </button>
+                  </div>
                 ) : (
                   <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '14px', padding: '20px', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '14px', color: 'var(--text-primary)' }}>새 공지 작성</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>새 공지 작성</h3>
+                      <button
+                        onClick={() => setShowNoticeAIModal(true)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: 'rgba(107,144,128,0.12)',
+                          color: 'var(--button-primary)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(107,144,128,0.3)',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        ✨ AI로 작성
+                      </button>
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <input
                         type="text"
@@ -1621,6 +1703,155 @@ export default function GatheringDetailPage() {
           />
         )}
       </div>
+
+      {/* 공지 AI 자동 생성 모달 */}
+      {showNoticeAIModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 50, backgroundColor: 'rgba(0,0,0,0.5)', padding: '24px',
+          }}
+          onClick={handleCloseNoticeAIModal}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--card-bg, #fff)', backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)', width: '100%', maxWidth: '500px',
+              borderRadius: '20px', padding: '28px', maxHeight: '80vh', overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px', color: 'var(--text-primary)' }}>
+              AI 공지 자동 생성
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+              공지할 내용을 간단히 입력하면 AI가 공지문을 작성해줍니다.
+            </p>
+
+            {/* 톤 선택 */}
+            <div style={{ marginBottom: '14px' }}>
+              <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>톤 선택</p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {['부드럽게', '중립적', '단호하게'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setNoticeAITone(t)}
+                    style={{
+                      flex: 1, padding: '8px 0', fontSize: '13px', fontWeight: '600',
+                      borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s',
+                      backgroundColor: noticeAITone === t ? 'var(--button-primary)' : 'rgba(0,0,0,0.04)',
+                      color: noticeAITone === t ? 'white' : 'var(--text-secondary)',
+                      border: noticeAITone === t ? 'none' : '1px solid rgba(0,0,0,0.08)',
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 프롬프트 입력 */}
+            <textarea
+              value={noticeAIPrompt}
+              onChange={(e) => setNoticeAIPrompt(e.target.value)}
+              placeholder="예: 이번 주 토요일 모임 장소가 홍대 보드게임카페로 변경됩니다"
+              rows={3}
+              disabled={noticeAIGenerating}
+              style={{
+                width: '100%', padding: '12px 14px', fontSize: '14px',
+                border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px',
+                backgroundColor: 'rgba(255,255,255,0.7)', color: 'var(--text-primary)',
+                outline: 'none', resize: 'none', boxSizing: 'border-box',
+                fontFamily: 'inherit', marginBottom: '12px',
+              }}
+            />
+
+            <button
+              onClick={handleGenerateNoticeAI}
+              disabled={noticeAIGenerating || !noticeAIPrompt.trim()}
+              style={{
+                width: '100%', padding: '12px 0',
+                background: noticeAIGenerating || !noticeAIPrompt.trim() ? 'rgba(0,0,0,0.06)' : 'var(--button-primary)',
+                color: noticeAIGenerating || !noticeAIPrompt.trim() ? 'var(--text-muted)' : 'white',
+                borderRadius: '12px', fontWeight: '600', border: 'none',
+                cursor: noticeAIGenerating || !noticeAIPrompt.trim() ? 'not-allowed' : 'pointer',
+                fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              {noticeAIGenerating ? (
+                <>
+                  <div style={{
+                    width: '16px', height: '16px',
+                    border: '2px solid rgba(0,0,0,0.1)', borderTop: '2px solid var(--text-muted)',
+                    borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                  }} />
+                  생성 중...
+                </>
+              ) : 'AI 공지 생성하기'}
+            </button>
+
+            {/* AI 결과 미리보기 */}
+            {noticeAIResult && (
+              <div style={{ marginTop: '20px' }}>
+                <div style={{
+                  backgroundColor: 'rgba(107,144,128,0.06)', borderRadius: '14px',
+                  padding: '16px', border: '1px solid rgba(107,144,128,0.15)',
+                }}>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--button-primary)', marginBottom: '10px' }}>
+                    AI 생성 결과 (수정 가능)
+                  </p>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '12px', color: 'var(--text-secondary)' }}>제목</label>
+                  <input
+                    type="text"
+                    value={noticeAIResult.title}
+                    onChange={(e) => setNoticeAIResult(prev => ({ ...prev, title: e.target.value }))}
+                    style={{
+                      width: '100%', padding: '10px 12px', fontSize: '14px',
+                      border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px',
+                      backgroundColor: 'rgba(255,255,255,0.8)', color: 'var(--text-primary)',
+                      outline: 'none', boxSizing: 'border-box', marginBottom: '10px',
+                    }}
+                  />
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '12px', color: 'var(--text-secondary)' }}>내용</label>
+                  <textarea
+                    value={noticeAIResult.content}
+                    onChange={(e) => setNoticeAIResult(prev => ({ ...prev, content: e.target.value }))}
+                    rows={4}
+                    style={{
+                      width: '100%', padding: '10px 12px', fontSize: '14px',
+                      border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px',
+                      backgroundColor: 'rgba(255,255,255,0.8)', color: 'var(--text-primary)',
+                      outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <button
+                    onClick={handleApplyNoticeAI}
+                    style={{
+                      flex: 1, padding: '12px 0', backgroundColor: 'var(--button-primary)',
+                      color: 'white', borderRadius: '12px', fontWeight: '600',
+                      border: 'none', cursor: 'pointer', fontSize: '14px',
+                    }}
+                  >
+                    적용하기
+                  </button>
+                  <button
+                    onClick={handleCloseNoticeAIModal}
+                    style={{
+                      flex: 1, padding: '12px 0', backgroundColor: 'rgba(0,0,0,0.06)',
+                      color: 'var(--text-secondary)', borderRadius: '12px', fontWeight: '500',
+                      border: 'none', cursor: 'pointer', fontSize: '14px',
+                    }}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 일정 평가 모달 */}
       {activeEvalScheduleId && (
