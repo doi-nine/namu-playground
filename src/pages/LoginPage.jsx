@@ -16,13 +16,20 @@ export default function LoginPage() {
     const action = isLogin ? signIn : signUp
     const { data, error } = await action(email, password)
     if (error) {
-      setError(error.message)
+      if (error.message?.toLowerCase().includes('rate limit')) {
+        setError('잠시 후 다시 시도해주세요. (이메일 발송 제한)')
+      } else {
+        setError(error.message)
+      }
     } else {
       if (isLogin) {
         // 기존 회원: AuthGate가 프로필 확인 후 처리
         navigate('/gatherings')
+      } else if (data?.session) {
+        // 이메일 인증 비활성화: 즉시 세션 생성됨 → 프로필 작성으로
+        navigate('/profile/setup', { replace: true })
       } else {
-        // 신규 회원: 이메일 인증 페이지로
+        // 이메일 인증 활성화: 인증 페이지로
         navigate('/verify-email', { state: { email } })
       }
     }
