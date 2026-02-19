@@ -433,7 +433,7 @@ export default function ScheduleDetailPage() {
               borderBottom: activeTab === tab.key ? '3px solid var(--button-primary)' : '3px solid transparent',
               color: activeTab === tab.key ? 'var(--button-primary)' : 'var(--text-muted)',
               fontWeight: activeTab === tab.key ? '600' : '400',
-              cursor: 'pointer', fontSize: '15px', transition: 'all 0.2s',
+              cursor: 'pointer', fontSize: '15px', transition: 'all 0.2s', outline: 'none',
             }}
           >
             {tab.label}
@@ -536,9 +536,9 @@ export default function ScheduleDetailPage() {
                           {member.profiles.custom_badge}
                         </span>
                       )}
-                      {/* 참석 상태 버튼 (본인만 조작 가능) */}
+                      {/* 참석 상태 버튼 (본인만 조작 가능, 완료된 일정은 읽기 전용) */}
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                        {member.user_id === currentUser?.id ? (
+                        {member.user_id === currentUser?.id && !schedule.is_completed ? (
                           <>
                             <button
                               onClick={(e) => handleAttendanceStatus(e, 'pending')}
