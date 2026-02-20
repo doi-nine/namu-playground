@@ -587,24 +587,33 @@ export default function LandingPage() {
             {ctaButton}
           </div>
 
-          {/* 둘러보기 링크 */}
+          {/* 둘러보기 버튼 */}
           {!user && (
-            <div style={{ animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.2s both', marginTop: '16px' }}>
+            <div style={{ animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.2s both', marginTop: '12px' }}>
               <button
                 onClick={() => { enterGuestMode(); navigate('/gatherings'); }}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  fontSize: isMobile ? '14px' : '15px',
+                  padding: isMobile ? '14px 32px' : '16px 44px',
+                  background: 'rgba(255,255,255,0.25)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  border: '1.5px solid rgba(255,255,255,0.5)',
+                  borderRadius: '16px',
+                  fontSize: isMobile ? '15px' : '17px',
+                  fontWeight: '600',
+                  color: 'var(--text-primary)',
                   cursor: 'pointer',
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '4px',
-                  transition: 'color 0.2s',
                   outline: 'none',
+                  transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.25)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
               >
                 로그인 없이 둘러보기
               </button>
