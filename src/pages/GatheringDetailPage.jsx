@@ -1755,7 +1755,7 @@ export default function GatheringDetailPage() {
         )}
 
         {activeTab === 'board' && (
-          (!isApprovedMember && !isGuest) ? (
+          !isApprovedMember ? (
             <div style={{ textAlign: 'center', padding: '48px 24px' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
               <p style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>가입 후 이용 가능합니다</p>
@@ -1767,7 +1767,6 @@ export default function GatheringDetailPage() {
               memberStatus={memberStatus}
               isCreator={gathering?.creator_id === currentUser?.id}
               reviewKey={reviewSavedCount}
-              isGuest={isGuest}
             />
           )
         )}

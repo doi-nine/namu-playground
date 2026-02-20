@@ -276,7 +276,7 @@ export default function BoardTab({ gatheringId, memberStatus, isCreator, reviewK
     return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   };
 
-  if (!canWrite && !isGuest) {
+  if (!canWrite) {
     return (
       <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
