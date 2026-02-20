@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { AVAILABLE_TAGS } from '../constants/tags';
@@ -6,19 +6,24 @@ import PremiumModal from '../components/PremiumModal';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 
+const DRAFT_KEY = 'createGathering_draft';
+function getDraft() {
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
+}
+
 export default function CreateGatheringPage() {
     const navigate = useNavigate();
     const isMobile = useIsMobile();
 
-    const [mode, setMode] = useState('toggle');
+    const [mode, setMode] = useState(() => getDraft().mode || 'toggle');
     const { user, profile, refreshProfile } = useAuth();
     const [showPremiumModal, setShowPremiumModal] = useState(false);
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [tags, setTags] = useState([]);
-    const [approvalRequired, setApprovalRequired] = useState(false);
-    const [aiInput, setAiInput] = useState('');
-    const [aiResult, setAiResult] = useState(null);
+    const [title, setTitle] = useState(() => getDraft().title || '');
+    const [description, setDescription] = useState(() => getDraft().description || '');
+    const [tags, setTags] = useState(() => getDraft().tags || []);
+    const [approvalRequired, setApprovalRequired] = useState(() => getDraft().approvalRequired ?? false);
+    const [aiInput, setAiInput] = useState(() => getDraft().aiInput || '');
+    const [aiResult, setAiResult] = useState(() => getDraft().aiResult || null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +32,15 @@ export default function CreateGatheringPage() {
 
     const isPremium = profile?.is_premium;
     const maxTagCount = isPremium ? 6 : 3;
+
+    // 폼 상태 변경 시 sessionStorage에 자동 저장
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(DRAFT_KEY, JSON.stringify(
+                { mode, title, description, tags, approvalRequired, aiInput, aiResult }
+            ));
+        } catch {}
+    }, [mode, title, description, tags, approvalRequired, aiInput, aiResult]);
 
     const handleAIGenerate = async () => {
         if (!aiInput.trim()) {
@@ -141,6 +155,7 @@ export default function CreateGatheringPage() {
 
             if (memberError) throw memberError;
 
+            sessionStorage.removeItem(DRAFT_KEY);
             alert('모임이 성공적으로 생성되었습니다!');
             navigate(`/gatherings/${gatheringData.id}`);
 
