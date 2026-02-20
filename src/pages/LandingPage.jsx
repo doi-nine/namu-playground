@@ -564,12 +564,8 @@ export default function LandingPage() {
             {ctaButton}
             <button
               onClick={() => {
-                if (user) {
-                  navigate('/gatherings');
-                } else {
-                  enterGuestMode();
-                  navigate('/gatherings');
-                }
+                enterGuestMode();
+                navigate('/gatherings');
               }}
               style={{
                 padding: isMobile ? '16px 36px' : '18px 48px',
