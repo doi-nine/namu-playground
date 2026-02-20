@@ -582,43 +582,50 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* CTA 버튼 */}
-          <div style={{ animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.1s both' }}>
+          {/* CTA 버튼 + 둘러보기 */}
+          <div style={{
+            animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.1s both',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
             {ctaButton}
+            <button
+              onClick={() => {
+                if (user) {
+                  navigate('/gatherings');
+                } else {
+                  enterGuestMode();
+                  navigate('/gatherings');
+                }
+              }}
+              style={{
+                padding: isMobile ? '14px 32px' : '16px 44px',
+                background: 'rgba(255,255,255,0.25)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1.5px solid rgba(255,255,255,0.5)',
+                borderRadius: '16px',
+                fontSize: isMobile ? '15px' : '17px',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.25)'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+            >
+              로그인 없이 둘러보기
+            </button>
           </div>
-
-          {/* 둘러보기 버튼 */}
-          {!user && (
-            <div style={{ animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.2s both', marginTop: '12px' }}>
-              <button
-                onClick={() => { enterGuestMode(); navigate('/gatherings'); }}
-                style={{
-                  padding: isMobile ? '14px 32px' : '16px 44px',
-                  background: 'rgba(255,255,255,0.25)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  border: '1.5px solid rgba(255,255,255,0.5)',
-                  borderRadius: '16px',
-                  fontSize: isMobile ? '15px' : '17px',
-                  fontWeight: '600',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.25)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                }}
-              >
-                로그인 없이 둘러보기
-              </button>
-            </div>
-          )}
 
           {/* 스크롤 힌트 */}
           <ScrollHint onClick={scrollToProblems} animationDelay="1.3s" />
