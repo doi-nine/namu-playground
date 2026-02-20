@@ -14,6 +14,9 @@ export default function MyPage() {
   const [joinedGatherings, setJoinedGatherings] = useState([]);
   const [pendingGatherings, setPendingGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortMode, setSortMode] = useState('recent');
+  const [membershipTimestamps, setMembershipTimestamps] = useState({});
+  const [bookmarkTimestamps, setBookmarkTimestamps] = useState({});
   const warningChecked = useRef(false);
 
   useEffect(() => {
@@ -72,11 +75,16 @@ export default function MyPage() {
 
       // 2. 내 멤버십 조회 (join 없이)
       const { data: myMemberships, error: memberError } = await supabase
-        .from('gathering_members').select('gathering_id, status').eq('user_id', uid);
+        .from('gathering_members').select('gathering_id, status, created_at').eq('user_id', uid);
       if (memberError) throw memberError;
 
       const approvedIds = (myMemberships || []).filter(m => m.status === 'approved').map(m => m.gathering_id);
       const pendingIds = (myMemberships || []).filter(m => m.status === 'pending').map(m => m.gathering_id);
+
+      // 멤버십 타임스탬프 맵 저장
+      const tsMap = {};
+      (myMemberships || []).forEach(m => { tsMap[m.gathering_id] = m.created_at; });
+      setMembershipTimestamps(tsMap);
 
       // 3. 승인된 모임 정보 조회
       if (approvedIds.length > 0) {
@@ -97,6 +105,15 @@ export default function MyPage() {
       } else {
         setPendingGatherings([]);
       }
+
+      // 5. 즐겨찾기 타임스탬프 조회
+      const { data: bookmarkData } = await supabase
+        .from('gathering_bookmarks')
+        .select('gathering_id, created_at')
+        .eq('user_id', uid);
+      const bmMap = {};
+      (bookmarkData || []).forEach(b => { bmMap[b.gathering_id] = b.created_at; });
+      setBookmarkTimestamps(bmMap);
 
     } catch (error) {
       console.error('내 모임 조회 오류:', error);
@@ -149,14 +166,27 @@ export default function MyPage() {
     return `${month}/${day}(${weekday}) ${hours}:${minutes}`;
   }
 
-  // 모든 모임을 하나의 리스트로 합침
+  // 모든 모임을 하나의 리스트로 합침 (_joinedAt: 가입/생성 시점)
   const allGatherings = [
-    ...createdGatherings.map(g => ({ ...g, _type: 'created' })),
+    ...createdGatherings.map(g => ({ ...g, _type: 'created', _joinedAt: g.created_at })),
     ...joinedGatherings
       .filter(g => !createdGatherings.some(c => c.id === g.id))
-      .map(g => ({ ...g, _type: 'joined' })),
-    ...pendingGatherings.map(g => ({ ...g, _type: 'pending' })),
+      .map(g => ({ ...g, _type: 'joined', _joinedAt: membershipTimestamps[g.id] || g.created_at })),
+    ...pendingGatherings.map(g => ({ ...g, _type: 'pending', _joinedAt: membershipTimestamps[g.id] || g.created_at })),
   ];
+
+  const sortedGatherings = [...allGatherings].sort((a, b) => {
+    if (sortMode === 'recent') {
+      return new Date(b._joinedAt || 0) - new Date(a._joinedAt || 0);
+    } else {
+      const aTime = bookmarkTimestamps[a.id];
+      const bTime = bookmarkTimestamps[b.id];
+      if (aTime && bTime) return new Date(bTime) - new Date(aTime);
+      if (aTime) return -1;
+      if (bTime) return 1;
+      return new Date(b._joinedAt || 0) - new Date(a._joinedAt || 0);
+    }
+  });
 
   if (loading) {
     return (
@@ -217,7 +247,33 @@ export default function MyPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {allGatherings.map(gathering => (
+          {/* 정렬 버튼 */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[
+              { key: 'recent', label: '최근 가입한 순' },
+              { key: 'bookmark', label: '즐겨찾기 순' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setSortMode(key)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '20px',
+                  border: sortMode === key ? 'none' : '1px solid rgba(0,0,0,0.12)',
+                  backgroundColor: sortMode === key ? 'var(--button-primary)' : 'rgba(255,255,255,0.5)',
+                  color: sortMode === key ? '#FFFFFF' : 'var(--text-secondary)',
+                  fontSize: '13px',
+                  fontWeight: sortMode === key ? '600' : '400',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {sortedGatherings.map(gathering => (
             <GatheringCard
               key={`${gathering._type}-${gathering.id}`}
               gathering={gathering}
