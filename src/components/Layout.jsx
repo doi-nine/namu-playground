@@ -9,6 +9,7 @@ import {
   Settings, Sparkles, Star
 } from 'lucide-react';
 import { useBookmarks } from '../context/BookmarkContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function Layout({ children }) {
   const [profile, setProfile] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [myGatheringsOpen, setMyGatheringsOpen] = useState(false);
   const [myGatherings, setMyGatherings] = useState([]);
@@ -29,13 +30,6 @@ export default function Layout({ children }) {
     setSidebarOpen(prev => !prev);
     setTimeout(() => setIsTransitioning(false), 350);
   };
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useEffect(() => {
     if (user && !isGuest) {
