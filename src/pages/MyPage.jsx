@@ -275,7 +275,12 @@ export default function MyPage() {
             ))}
           </div>
 
-          {sortedGatherings.map(gathering => (
+          {sortMode === 'bookmark' && sortedGatherings.filter(g => bookmarkTimestamps[g.id]).length === 0 ? (
+            <div className="glass" style={{ textAlign: 'center', padding: '36px 24px', borderRadius: '16px' }}>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>⭐</div>
+              <p style={{ fontSize: '15px', color: 'var(--text-muted)' }}>즐겨찾기한 모임이 없습니다.</p>
+            </div>
+          ) : (sortMode === 'bookmark' ? sortedGatherings.filter(g => bookmarkTimestamps[g.id]) : sortedGatherings).map(gathering => (
             <GatheringCard
               key={`${gathering._type}-${gathering.id}`}
               gathering={gathering}
