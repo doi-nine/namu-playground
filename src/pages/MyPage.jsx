@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useToast } from '../components/Toast';
+import { useBookmarks } from '../context/BookmarkContext';
+import { Star } from 'lucide-react';
 
 export default function MyPage() {
   const navigate = useNavigate();
@@ -291,12 +293,15 @@ export default function MyPage() {
 }
 
 function GatheringCard({ gathering, type, onCancelJoin, onDelete, navigate, formatDate }) {
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+
   return (
     <div
       className="glass"
       style={{
         borderRadius: '16px',
         transition: 'all 0.2s',
+        position: 'relative',
       }}
       onMouseEnter={e => {
         e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
@@ -307,9 +312,25 @@ function GatheringCard({ gathering, type, onCancelJoin, onDelete, navigate, form
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
+      {/* 즐겨찾기 버튼 */}
+      <button
+        onClick={(e) => { e.stopPropagation(); toggleBookmark(gathering.id, gathering.title); }}
+        style={{
+          position: 'absolute', top: '16px', right: '16px',
+          background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+          zIndex: 1,
+        }}
+      >
+        <Star
+          size={18}
+          fill={isBookmarked(gathering.id) ? 'var(--button-primary)' : 'none'}
+          color="var(--button-primary)"
+        />
+      </button>
+
       <div style={{ padding: '20px' }}>
         {/* 모임 이름 + 수정 버튼 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', paddingRight: '28px' }}>
           <h3
             onClick={() => navigate(`/gatherings/${gathering.id}`)}
             style={{
