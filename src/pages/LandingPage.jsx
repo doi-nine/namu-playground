@@ -558,7 +558,7 @@ export default function LandingPage() {
             animation: 'heroTextReveal 0.7s cubic-bezier(0.16,1,0.3,1) 1.1s both',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
+            alignItems: 'stretch',
             gap: '12px',
           }}>
             {ctaButton}
