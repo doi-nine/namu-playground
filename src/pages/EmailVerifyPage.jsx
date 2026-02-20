@@ -34,8 +34,8 @@ export default function EmailVerifyPage() {
 
   const handleVerify = async (e) => {
     e.preventDefault()
-    if (otp.length !== 6) {
-      setError('6자리 인증 코드를 입력해주세요.')
+    if (otp.length !== 8) {
+      setError('8자리 인증 코드를 입력해주세요.')
       return
     }
     setError('')
@@ -138,10 +138,10 @@ export default function EmailVerifyPage() {
             <input
               type="text"
               inputMode="numeric"
-              maxLength={6}
-              placeholder="000000"
+              maxLength={8}
+              placeholder="00000000"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
               style={inputStyle}
               onFocus={(e) => {
                 e.target.style.borderColor = 'var(--button-primary)'
