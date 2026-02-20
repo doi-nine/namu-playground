@@ -10,7 +10,8 @@ export default function AuthGate({ children }) {
   const location = useLocation();
   const { user, profile, loading: authLoading, isGuest } = useAuth();
 
-  const isGuestAllowed = isGuest && GUEST_ALLOWED_PREFIXES.some(
+  const isGuestActive = isGuest || sessionStorage.getItem('guestMode') === 'true';
+  const isGuestAllowed = isGuestActive && GUEST_ALLOWED_PREFIXES.some(
     prefix => location.pathname === prefix || location.pathname.startsWith(prefix + '/')
   );
 
