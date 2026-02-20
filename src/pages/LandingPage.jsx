@@ -290,35 +290,6 @@ export default function LandingPage() {
         >
           로그인
         </button>
-        {!user && (
-          <button
-            onClick={() => { enterGuestMode(); navigate('/gatherings'); }}
-            style={{
-              padding: '8px 18px',
-              background: 'rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.4)',
-              borderRadius: '12px',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              outline: 'none',
-              transition: 'background 0.2s, transform 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
-              e.currentTarget.style.transform = 'translateY(-1px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.25)'
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
-          >
-            둘러보기
-          </button>
-        )}
         <button
           onClick={() => setShowSupportPopup(true)}
           style={{
@@ -601,18 +572,19 @@ export default function LandingPage() {
                 }
               }}
               style={{
-                padding: isMobile ? '14px 32px' : '16px 44px',
+                padding: isMobile ? '16px 36px' : '18px 48px',
                 background: 'rgba(255,255,255,0.25)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 border: '1.5px solid rgba(255,255,255,0.5)',
                 borderRadius: '16px',
-                fontSize: isMobile ? '15px' : '17px',
-                fontWeight: '600',
+                fontSize: isMobile ? '16px' : '18px',
+                fontWeight: '700',
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
                 outline: 'none',
                 transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+                letterSpacing: '0.02em',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
