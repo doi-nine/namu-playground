@@ -1,16 +1,40 @@
-# React + Vite
+# 🌳 나무놀이터 (Namu Playground)
+> **심리적 트리거 기반 단일 구독 BM을 직접 구현한 지역 기반 소셜 모임 플랫폼 (Web)**
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+본 레포지토리는 청년층 고독감 데이터(Gallup Meta 2023)에서 출발하여, 유저의 심리적 니즈를 자극하는 프리미엄 구독 모델(월 3,000원)의 핵심 기능과 글로벌 결제 파이프라인을 직접 기획하고 구현한 MVP 프로젝트입니다[cite: 1].
 
-Currently, two official plugins are available:
+## 🛠 기술 스택 및 아키텍처 (Tech Stack)
+* **Frontend:** React, Vite
+* **Backend / DB:** Supabase (Database, Edge Functions)
+* **AI Integration:** OpenAI GPT-4o-mini (비용 최적화 설계)
+* **Payment API:** Polar.sh + Stripe 연동
+* **역할:** 단독 기획 · 프로덕트 디자인 · 풀스택 빌드 (100%)[cite: 1]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 💡 비즈니스 모델(BM) 및 핵심 기능 개요
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+모임 생성 및 참여는 무제한 무료로 제공하여 플랫폼 스케일업을 도모하되, **'불안 해소(안전)', '편의성 소진(AI)', '자기표현(꾸미기)'**이라는 3가지 유저 심리 트리거를 바탕으로 단일 프리미엄 티어(월 3,000원 / $3) 전환을 유도하도록 설계되었습니다[cite: 1].
 
-## Expanding the ESLint configuration
+### 1. 주요 기능 및 현재 구현 상태 (Implementation Status)
+베타 빌드 기준으로 아래의 핵심 비즈니스 로직과 UI 분기가 실제 작동하도록 100% 구현 완료되었습니다.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* **글로벌 결제 시스템 연동:** Polar.sh와 Stripe를 결제 레이어로 활용. Supabase Edge Functions에서 Polar API를 호출하여 유저의 구독 상태(`is_premium`)를 검증하고 즉시 기능을 활성화하는 동적 파이프라인 구축.
+* **AI 기능 제한 및 카운팅:** 편리함을 경험한 뒤 박탈감을 자극하는 모델 설계. AI 프로필/모임 글 생성/추천/채팅 요약 기능을 무료 유저에게 월 3회로 제한하며, DB 내 `ai_recommendations_left` 컬럼으로 잔여 횟수를 실시간 관리.
+* **매너도 시스템 및 조회 제한:** 모임 종료 후 상호 평가(엄지 위/아래 및 상세 태그 선택) 기반의 0~100점 신뢰 지표 산출 로직 구현. 무료 유저는 타인 매너도 조회를 월 3회로 제한하여 안전에 대한 심리적 불안을 결제로 전환.
+* **자기표현 및 노출 권한 제어:** 프리미엄 유저 대상 커스텀 텍스트 뱃지(최대 10자) 기능 구현 완료. 프로필/모임 태그 확장(3개→6개), 모임 글 상단 우선 노출 및 일정 모집 인원 확대(20명→100명)에 따른 UI 및 데이터 분기 완료.
+
+---
+
+## 📊 단위 경제성 산출 및 비용 최적화 (Unit Economics)
+
+* **인프라 고정비 0원 지향:** 초기 고정비를 최소화하기 위해 Supabase 무료 티어 및 Vercel 배포 환경을 적극 활용했습니다.
+* **AI 호출 비용 극소화:** 프리미엄 유저의 무제한 AI 사용에 따른 리스크를 방어하고자, GPT-4o-mini 모델을 선택하여 1회 API 호출당 비용을 0.2~0.3원 수준으로 방어했습니다. 
+* **BEP(손익분기점) 시뮬레이션:** 결제 수수료(3~5%)와 극소화된 API 비용 구조 덕분에, 유저 1,000명 중 단 5%인 50명의 프리미엄 전환자만 확보해도 즉시 BEP 달성이 가능한 지속 가능한 구조를 기획 단계에서 검증했습니다.
+
+---
+
+## ✍️ 성과 및 배운 점 (Retrospective)
+
+* **해커톤 본선 진출:** 본 기획 및 구현 스펙으로 Primer-OpenAI 공동 주최 해커톤에서 본선 진출 및 대면 발표를 진행했습니다[cite: 1].
+* **지속 가능한 운영에 대한 인사이트:** 첫 배포 이후 유저 트래픽 증가에 따른 인프라 비용 리스크를 경험하며 배포를 조정하게 되었습니다. 이 과정을 통해 기획자는 단순히 기능의 완성도를 높이는 것을 넘어, 초기 인프라 설계 단계에서부터 비즈니스 모델(BM)과 단위 경제성(Unit Economics)을 함께 시뮬레이션하고 연동해야 함을 배운 값진 프로젝트입니다[cite: 1].
